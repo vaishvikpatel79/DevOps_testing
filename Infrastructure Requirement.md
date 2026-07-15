@@ -10,6 +10,7 @@
 | Architecture Type | backend |
 | Application Exposure | Public |
 | Resource Naming Prefix | fastapi-demo-dev |
+| AccountID | 220897588425 |
 
 ---
 
@@ -86,7 +87,6 @@
 |---|---|
 | Service Name | fastapi-demo-service |
 | Deployment Type | ECS Fargate |
-| Container Image | 220897588425.dkr.ecr.us-east-1.amazonaws.com/fastapi-demo:v1 |
 | Desired Task Count | 1 |
 | Service Exposure | Public |
 | Attached Load Balancer | Yes |
