@@ -1,11 +1,11 @@
-output "alb_dns" {
+output "app_lb_dns" {
   description = "Application Load Balancer DNS name"
-  value       = aws_lb.fastapi_demo_alb.dns_name
+  value       = aws_lb.app_lb.dns_name
 }
 
 output "ecs_cluster_name" {
   description = "ECS cluster name"
-  value       = aws_ecs_cluster.fastapi_demo_ecs_cluster.name
+  value       = aws_ecs_cluster.fastapi_demo_cluster.name
 }
 
 output "ecs_service_name" {
@@ -15,43 +15,44 @@ output "ecs_service_name" {
 
 output "ecs_task_definition_arn" {
   description = "ECS task definition ARN"
-  value       = aws_ecs_task_definition.fastapi_demo_task_def.arn
+  value       = aws_ecs_task_definition.fastapi_demo_task.arn
 }
 
 output "ecr_repository_url" {
   description = "ECR repository URL"
-  value       = aws_ecr_repository.fastapi_demo_ecr_repo.repository_url
+  value       = aws_ecr_repository.fastapi_demo_repo.repository_url
 }
 
 output "deployment_contract" {
+  description = "Canonical deployment contract for the Deployment Agent"
   value = {
     meta = {
       contract_version = "1.0"
       cloud            = "aws"
-      runtime          = "ecs-fargate"
+      runtime          = "ecs"
       application_type = "backend"
       environment      = var.environment
       region           = var.region
-      deployment_type  = "managed"
+      deployment_type  = "ECS Fargate"
     }
 
     compute = {
-      cluster_name  = aws_ecs_cluster.fastapi_demo_ecs_cluster.name
+      cluster_name  = aws_ecs_cluster.fastapi_demo_cluster.name
       service_name  = aws_ecs_service.fastapi_demo_service.name
       service_names = { "fastapi-demo-service" = aws_ecs_service.fastapi_demo_service.name }
-      task_family   = aws_ecs_task_definition.fastapi_demo_task_def.family
-      workload_name = null
+      task_family   = aws_ecs_task_definition.fastapi_demo_task.family
+      workload_name = aws_ecs_service.fastapi_demo_service.name
     }
 
     network = {
       vpc_id             = aws_vpc.fastapi_demo_vpc.id
       subnet_ids         = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id]
-      security_group_ids = [aws_security_group.ecs_service_sg.id, aws_security_group.alb_sg.id]
+      security_group_ids = [aws_security_group.alb_sg.id, aws_security_group.ecs_service_sg.id]
       ingress_id         = null
     }
 
     routing = {
-      public_endpoint      = aws_lb.fastapi_demo_alb.dns_name
+      public_endpoint      = aws_lb.app_lb.dns_name
       internal_endpoint    = null
       custom_domain        = null
       certificate_required = false
@@ -67,14 +68,14 @@ output "deployment_contract" {
     security = {
       certificate_ref = null
       secret_refs     = null
-      role_arns       = { "ecs_task_execution_role" = aws_iam_role.ecs_task_execution_role.arn }
+      role_arns       = { ecs_task_execution_role = aws_iam_role.ecs_task_execution_role.arn }
     }
 
     health = {
       frontend_path  = null
-      backend_path   = "/health"
-      readiness_path = null
-      liveness_path  = null
+      backend_path   = var.health_check_path
+      readiness_path = var.health_check_path
+      liveness_path  = var.health_check_path
     }
   }
 }
