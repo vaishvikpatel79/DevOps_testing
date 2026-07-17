@@ -1,17 +1,17 @@
 variable "project_name" {
-  description = "Project name used in resource naming."
+  description = "Project name used as prefix for resource names"
   type        = string
   default     = "fastapi-demo"
 }
 
 variable "environment" {
-  description = "Deployment environment (used in names/tags)."
+  description = "Deployment environment"
   type        = string
   default     = "dev"
 }
 
 variable "region" {
-  description = "AWS region to deploy into."
+  description = "AWS region to deploy into"
   type        = string
   default     = "us-east-1"
 }
@@ -29,133 +29,121 @@ variable "account_id" {
 }
 
 variable "vpc_cidr" {
-  description = "CIDR block for the VPC."
+  description = "CIDR block for the VPC"
   type        = string
   default     = "10.0.0.0/16"
 }
 
-variable "enable_dns_support" {
-  description = "Enable DNS support for the VPC."
+variable "vpc_enable_dns_support" {
+  description = "Whether to enable DNS support on the VPC"
   type        = bool
   default     = true
 }
 
-variable "enable_dns_hostnames" {
-  description = "Enable DNS hostnames for the VPC."
+variable "vpc_enable_dns_hostnames" {
+  description = "Whether to enable DNS hostnames on the VPC"
   type        = bool
   default     = true
 }
 
 variable "public_subnet_1_cidr" {
-  description = "CIDR block for public subnet 1."
+  description = "CIDR for public subnet 1"
   type        = string
   default     = "10.0.1.0/24"
 }
 
-variable "public_subnet_2_cidr" {
-  description = "CIDR block for public subnet 2."
-  type        = string
-  default     = "10.0.2.0/24"
-}
-
 variable "public_subnet_1_az" {
-  description = "Availability zone for public subnet 1."
+  description = "Availability zone for public subnet 1"
   type        = string
   default     = "us-east-1a"
 }
 
+variable "public_subnet_1_map_public_ip_on_launch" {
+  description = "Whether to auto assign public IP for subnet 1"
+  type        = bool
+  default     = true
+}
+
+variable "public_subnet_2_cidr" {
+  description = "CIDR for public subnet 2"
+  type        = string
+  default     = "10.0.2.0/24"
+}
+
 variable "public_subnet_2_az" {
-  description = "Availability zone for public subnet 2."
+  description = "Availability zone for public subnet 2"
   type        = string
   default     = "us-east-1b"
 }
 
-variable "public_subnet_auto_assign_public_ip" {
-  description = "Whether public subnets should auto-assign public IPs."
+variable "public_subnet_2_map_public_ip_on_launch" {
+  description = "Whether to auto assign public IP for subnet 2"
   type        = bool
   default     = true
 }
 
 variable "alb_listener_port" {
-  description = "Port for the ALB listener."
+  description = "Port for the ALB listener"
   type        = number
   default     = 80
 }
 
 variable "container_port" {
-  description = "Port the container listens on."
+  description = "Container application port"
   type        = number
   default     = 8000
 }
 
-variable "container_cpu_units" {
-  description = "CPU units for the container task."
-  type        = number
-  default     = 256
-}
-
-variable "container_memory_mb" {
-  description = "Memory (MB) for the container task."
-  type        = number
-  default     = 512
-}
-
-variable "read_only_root_filesystem" {
-  description = "Whether container root filesystem is read-only."
-  type        = bool
-  default     = false
-}
-
 variable "desired_task_count" {
-  description = "Desired number of ECS tasks."
+  description = "Desired number of ECS tasks for the service"
   type        = number
   default     = 1
 }
 
-variable "health_check_enabled" {
-  description = "Whether health checks are enabled for the target group."
-  type        = bool
-  default     = true
+variable "task_cpu" {
+  description = "CPU units for the ECS task"
+  type        = number
+  default     = 256
+}
+
+variable "task_memory" {
+  description = "Memory (MB) for the ECS task"
+  type        = number
+  default     = 512
 }
 
 variable "health_check_path" {
-  description = "Health check path for the target group."
+  description = "Health check path for the target group"
   type        = string
   default     = "/health"
 }
 
-variable "health_check_port" {
-  description = "Health check port for the target group (can be 'traffic-port')."
-  type        = string
-  default     = "traffic-port"
-}
-
 variable "health_check_protocol" {
-  description = "Protocol used for health checks."
+  description = "Health check protocol for the target group"
   type        = string
   default     = "HTTP"
 }
 
-variable "healthy_threshold_count" {
-  description = "Healthy threshold count for target group health checks."
+variable "health_check_port" {
+  description = "Health check port for the target group"
+  type        = string
+  default     = "traffic-port"
+}
+
+variable "health_check_healthy_threshold" {
+  description = "Healthy threshold count for the target group health check"
   type        = number
   default     = 2
 }
 
-variable "unhealthy_threshold_count" {
-  description = "Unhealthy threshold count for target group health checks."
+variable "health_check_unhealthy_threshold" {
+  description = "Unhealthy threshold count for the target group health check"
   type        = number
   default     = 3
 }
 
 variable "health_check_interval_seconds" {
-  description = "Interval seconds for target group health checks."
+  description = "Health check interval seconds for the target group"
   type        = number
   default     = 30
-}
-
-variable "service_name" {
-  description = "Name of the primary service."
-  type        = string
-  default     = "fastapi-demo-service"
 }
