@@ -15,22 +15,13 @@ output "ecs_service_name" {
 
 output "ecs_task_definition_arn" {
   description = "ECS task definition ARN"
-  value       = aws_ecs_task_definition.fastapi_demo_task_definition.arn
+  value       = aws_ecs_task_definition.fastapi_demo_task_def.arn
 }
 
-output "ecr_repository_url" {
-  description = "ECR repository repository_url"
-  value       = aws_ecr_repository.ecr_repository.repository_url
-}
-
-output "service_image_uri" {
-  description = "Full ECR image URI for the service (constructed from var.service_tags)"
+output "ecr_image_uri_fastapi_demo_service" {
+  description = "Constructed ECR image URI for fastapi-demo-service from var.service_tags"
   value       = local.service_images["fastapi-demo-service"]
-}
-
-output "cloudwatch_log_group_name" {
-  description = "CloudWatch log group name used by ECS tasks"
-  value       = aws_cloudwatch_log_group.ecs_task_log_group.name
+  sensitive   = false
 }
 
 output "deployment_contract" {
@@ -39,32 +30,30 @@ output "deployment_contract" {
     meta = {
       contract_version = "1.0"
       cloud            = "aws"
-      runtime          = "ecs"
+      runtime          = "ecs_fargate"
       application_type = "backend"
       environment      = var.environment
       region           = var.region
-      deployment_type  = "fargate"
+      deployment_type  = "managed"
     }
 
     compute = {
-      cluster_name = aws_ecs_cluster.ecs_cluster.name
-      service_name = aws_ecs_service.fastapi_demo_service.name
-      service_names = {
-        "fastapi-demo-service" = aws_ecs_service.fastapi_demo_service.name
-      }
-      task_family   = aws_ecs_task_definition.fastapi_demo_task_definition.family
+      cluster_name  = aws_ecs_cluster.ecs_cluster.name
+      service_name  = aws_ecs_service.fastapi_demo_service.name
+      service_names = { for k, v in local.service_images : k => aws_ecs_service.fastapi_demo_service.name }
+      task_family   = aws_ecs_task_definition.fastapi_demo_task_def.family
       workload_name = null
     }
 
     network = {
       vpc_id             = aws_vpc.fastapi_demo_vpc.id
       subnet_ids         = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id]
-      security_group_ids = [aws_security_group.alb_sg.id, aws_security_group.ecs_service_sg.id]
+      security_group_ids = [aws_security_group.ecs_service_sg.id, aws_security_group.alb_sg.id]
       ingress_id         = null
     }
 
     routing = {
-      public_endpoint      = aws_lb.application_load_balancer.dns_name
+      public_endpoint      = "http://${aws_lb.application_load_balancer.dns_name}"
       internal_endpoint    = null
       custom_domain        = null
       certificate_required = false
@@ -81,14 +70,14 @@ output "deployment_contract" {
       certificate_ref = null
       secret_refs     = null
       role_arns = {
-        ecs_task_execution = aws_iam_role.ecs_task_execution_role.arn
+        ecs_task_execution_role = aws_iam_role.ecs_task_execution_role.arn
       }
     }
 
     health = {
       frontend_path  = null
-      backend_path   = var.health_check_path
-      readiness_path = null
+      backend_path   = "/health"
+      readiness_path = "/health"
       liveness_path  = null
     }
   }
