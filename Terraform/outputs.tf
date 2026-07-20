@@ -18,11 +18,6 @@ output "ecs_task_definition_arn" {
   value       = aws_ecs_task_definition.fastapi_demo_task_def.arn
 }
 
-output "ecr_repository_url" {
-  description = "ECR repository URL for the service"
-  value       = aws_ecr_repository.fastapi_demo_ecr.repository_url
-}
-
 output "deployment_contract" {
   description = "Canonical deployment contract for the deployment agent"
   value = {
