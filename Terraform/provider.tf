@@ -5,6 +5,10 @@ terraform {
       version = "~> 6.45.0"
     }
   }
+
+ terraform {
+  backend "s3" {}
+ }
 }
 
 provider "aws" {
