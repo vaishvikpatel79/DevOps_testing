@@ -152,21 +152,6 @@ resource "aws_security_group_rule" "ecs_egress_all" {
   security_group_id = aws_security_group.ecs_service_sg.id
 }
 
-resource "aws_ecr_repository" "fastapi_demo_ecr" {
-  name = var.service_repositories["fastapi-demo-service"]
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-
-  tags = {
-    Name        = "${var.project_name}-${var.environment}-ecr"
-    Environment = var.environment
-    Project     = var.project_name
-    ManagedBy   = "Terraform"
-  }
-}
-
 resource "aws_cloudwatch_log_group" "fastapi_demo_log_group" {
   name = "/ecs/${var.project_name}-${var.environment}-fastapi-demo"
 
