@@ -18,11 +18,6 @@ output "ecs_task_definition_arn" {
   value       = aws_ecs_task_definition.fastapi_task_definition.arn
 }
 
-output "ecr_repository_url" {
-  description = "ECR repository URL"
-  value       = aws_ecr_repository.ecr_repository.repository_url
-}
-
 output "ecr_image_uri" {
   description = "Full ECR image URI constructed from service_tags and service_repositories for the service"
   value       = local.service_images["fastapi-demo-service"]
