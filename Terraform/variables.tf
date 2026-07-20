@@ -11,73 +11,67 @@ variable "account_id" {
 }
 
 variable "project_name" {
-  description = "Project name used in resource naming."
+  description = "Project name used for resource naming."
   type        = string
   default     = "fastapi-demo"
 }
 
 variable "environment" {
-  description = "Deployment environment (e.g. dev, staging, prod)."
+  description = "Deployment environment (e.g. dev, prod)."
   type        = string
   default     = "dev"
 }
 
 variable "region" {
-  description = "AWS region to deploy into."
+  description = "AWS region to deploy resources into."
   type        = string
   default     = "us-east-1"
 }
 
-variable "desired_task_count" {
+variable "vpc_cidr" {
+  description = "CIDR block for the VPC."
+  type        = string
+  default     = "10.0.0.0/16"
+}
+
+variable "public_subnet_1_cidr" {
+  description = "CIDR block for public subnet 1."
+  type        = string
+  default     = "10.0.1.0/24"
+}
+
+variable "public_subnet_2_cidr" {
+  description = "CIDR block for public subnet 2."
+  type        = string
+  default     = "10.0.2.0/24"
+}
+
+variable "public_subnet_1_az" {
+  description = "Availability zone for public subnet 1."
+  type        = string
+  default     = "us-east-1a"
+}
+
+variable "public_subnet_2_az" {
+  description = "Availability zone for public subnet 2."
+  type        = string
+  default     = "us-east-1b"
+}
+
+variable "dns_resolution_enabled" {
+  description = "Enable DNS resolution in the VPC."
+  type        = bool
+  default     = true
+}
+
+variable "dns_hostnames_enabled" {
+  description = "Enable DNS hostnames in the VPC."
+  type        = bool
+  default     = true
+}
+
+variable "desired_count" {
   description = "Desired number of ECS tasks for the service."
   type        = number
   default     = 1
-}
-
-variable "container_cpu" {
-  description = "CPU units for the container"
-  type        = number
-  default     = 256
-}
-
-variable "container_memory" {
-  description = "Memory (MB) for the container"
-  type        = number
-  default     = 512
-}
-
-variable "container_port" {
-  description = "Container port the application listens on"
-  type        = number
-  default     = 8000
-}
-
-variable "health_check_path" {
-  description = "HTTP health check path for target group"
-  type        = string
-  default     = "/health"
-}
-
-variable "health_check_port" {
-  description = "Port used by health check (use \"traffic-port\" to use target port)"
-  type        = string
-  default     = "traffic-port"
-}
-
-variable "healthy_threshold" {
-  description = "Healthy threshold count for target group health check"
-  type        = number
-  default     = 2
-}
-
-variable "unhealthy_threshold" {
-  description = "Unhealthy threshold count for target group health check"
-  type        = number
-  default     = 3
-}
-
-variable "health_check_interval" {
-  description = "Health check interval in seconds for the target group"
-  type        = number
-  default     = 30
 }
