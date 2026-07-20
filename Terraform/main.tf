@@ -147,17 +147,6 @@ resource "aws_security_group_rule" "ecs_egress_all" {
   security_group_id = aws_security_group.ecs_service_sg.id
 }
 
-resource "aws_ecr_repository" "ecr_repository" {
-  name = "${var.project_name}-${var.environment}-repo"
-
-  tags = {
-    Name        = "${var.project_name}-${var.environment}-repo"
-    Environment = var.environment
-    Project     = var.project_name
-    ManagedBy   = var.managed_by
-  }
-}
-
 resource "aws_iam_role" "ecs_task_execution_role" {
   name = "${var.project_name}-${var.environment}-ecs-task-exec"
 
