@@ -301,6 +301,7 @@ resource "aws_ecs_service" "fastapi_demo_service" {
   cluster         = aws_ecs_cluster.fastapi_demo_cluster.id
   task_definition = aws_ecs_task_definition.fastapi_demo_task_definition.arn
   desired_count   = var.desired_count
+  launch_type     = "FARGATE"
 
   network_configuration {
     subnets          = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id]
