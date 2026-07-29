@@ -1,90 +1,80 @@
-output "alb_dns" {
-  description = "Public DNS name of the Application Load Balancer"
-  value       = aws_lb.go_demo_alb.dns_name
+output "alb_dns_name" {
+  description = "Application Load Balancer DNS name"
+  value       = aws_lb.fastapi_demo_alb.dns_name
 }
 
 output "ecs_cluster_name" {
-  description = "Name of the ECS Cluster"
-  value       = aws_ecs_cluster.go_demo_ecs_cluster.name
+  description = "ECS cluster name"
+  value       = aws_ecs_cluster.fastapi_demo_cluster.name
 }
 
-output "frontend_ecs_service_name" {
-  description = "Name of the Frontend ECS Service"
-  value       = aws_ecs_service.frontend_ecs_service.name
+output "ecs_service_name" {
+  description = "ECS service name"
+  value       = aws_ecs_service.fastapi_demo_service.name
 }
 
-output "backend_ecs_service_name" {
-  description = "Name of the Backend ECS Service"
-  value       = aws_ecs_service.backend_ecs_service.name
+output "ecs_task_definition_arn" {
+  description = "ECS task definition ARN"
+  value       = aws_ecs_task_definition.fastapi_demo_task_definition.arn
 }
 
-output "frontend_task_definition_arn" {
-  description = "ARN of the Frontend Task Definition"
-  value       = aws_ecs_task_definition.frontend_task_definition.arn
+output "ecr_image_uri_fastapi_demo_service" {
+  description = "Full ECR image URI constructed from service_tags and account metadata for fastapi-demo-service"
+  value       = local.service_images["fastapi-demo-service"]
 }
 
-output "backend_task_definition_arn" {
-  description = "ARN of the Backend Task Definition"
-  value       = aws_ecs_task_definition.backend_task_definition.arn
+output "vpc_id" {
+  description = "VPC ID"
+  value       = aws_vpc.fastapi_demo_vpc.id
 }
 
-output "frontend_ecr_repository_uri" {
-  description = "Amazon ECR Repository URI for the Frontend image"
-  value       = data.aws_ecr_repository.frontend_ecr_repo.repository_url
+output "public_subnet_ids" {
+  description = "List of public subnet IDs"
+  value       = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id]
 }
 
-output "backend_ecr_repository_uri" {
-  description = "Amazon ECR Repository URI for the Backend image"
-  value       = data.aws_ecr_repository.backend_ecr_repo.repository_url
+output "security_group_ids" {
+  description = "Security group IDs for ALB and ECS service"
+  value       = [aws_security_group.alb_sg.id, aws_security_group.ecs_service_sg.id]
 }
 
-output "frontend_target_group_arn" {
-  description = "ARN of the Frontend Target Group"
-  value       = aws_lb_target_group.go_demo_frontend_tg.arn
-}
-
-output "backend_target_group_arn" {
-  description = "ARN of the Backend Target Group"
-  value       = aws_lb_target_group.go_demo_backend_tg.arn
-}
-
-output "application_url" {
-  description = "Public URL of the deployed application (http://<ALB-DNS>)"
-  value       = "http://${aws_lb.go_demo_alb.dns_name}"
+output "cloudwatch_log_group_name" {
+  description = "CloudWatch log group for ECS tasks"
+  value       = aws_cloudwatch_log_group.fastapi_demo_log_group.name
 }
 
 output "deployment_contract" {
+  description = "Machine-readable deployment contract for the Deployment Agent"
   value = {
     meta = {
       contract_version = "1.0"
       cloud            = "aws"
       runtime          = "ecs_fargate"
-      application_type = "fullstack"
+      application_type = "backend"
       environment      = var.environment
       region           = var.region
       deployment_type  = "container"
     }
 
     compute = {
-      cluster_name = aws_ecs_cluster.go_demo_ecs_cluster.name
-      service_name = null
+      cluster_name = aws_ecs_cluster.fastapi_demo_cluster.name
+      service_name = aws_ecs_service.fastapi_demo_service.name
       service_names = {
-        "go-demo-frontend-service" = aws_ecs_service.frontend_ecs_service.name
-        "go-demo-backend-service"  = aws_ecs_service.backend_ecs_service.name
+        "fastapi-demo-service" = aws_ecs_service.fastapi_demo_service.name
       }
-      task_family   = null
-      workload_name = null
+      task_family   = aws_ecs_task_definition.fastapi_demo_task_definition.family
+      workload_name = aws_ecs_service.fastapi_demo_service.name
     }
 
     network = {
-      vpc_id             = aws_vpc.go_demo_vpc.id
+      vpc_id             = aws_vpc.fastapi_demo_vpc.id
       subnet_ids         = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id]
-      security_group_ids = [aws_security_group.alb_sg.id, aws_security_group.frontend_service_sg.id, aws_security_group.backend_service_sg.id]
-      ingress_id         = aws_internet_gateway.go_demo_igw.id
+      security_group_ids = [aws_security_group.alb_sg.id, aws_security_group.ecs_service_sg.id]
+      ingress_id         = aws_lb.fastapi_demo_alb.id
     }
 
     routing = {
-      public_endpoint      = "http://${aws_lb.go_demo_alb.dns_name}"
+      public_endpoint      = aws_lb.fastapi_demo_alb.dns_name
       internal_endpoint    = null
       custom_domain        = null
       certificate_required = false
@@ -106,10 +96,10 @@ output "deployment_contract" {
     }
 
     health = {
-      frontend_path  = "/"
-      backend_path   = "/health"
+      frontend_path  = null
+      backend_path   = var.health_check_path
       readiness_path = null
-      liveness_path  = null
+      liveness_path  = var.health_check_path
     }
   }
 }
