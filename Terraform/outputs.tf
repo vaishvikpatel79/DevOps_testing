@@ -1,6 +1,6 @@
 output "alb_dns_name" {
   description = "Application Load Balancer DNS name"
-  value       = aws_lb.fastapi_demo_alb.dns_name
+  value       = aws_lb.alb.dns_name
 }
 
 output "ecs_cluster_name" {
@@ -18,49 +18,29 @@ output "ecs_task_definition_arn" {
   value       = aws_ecs_task_definition.fastapi_demo_task_definition.arn
 }
 
-output "ecr_image_uri_fastapi_demo_service" {
-  description = "Full ECR image URI constructed from service_tags and account metadata for fastapi-demo-service"
+output "ecr_image_uri" {
+  description = "Constructed ECR image URI for the service"
   value       = local.service_images["fastapi-demo-service"]
 }
 
-output "vpc_id" {
-  description = "VPC ID"
-  value       = aws_vpc.fastapi_demo_vpc.id
-}
-
-output "public_subnet_ids" {
-  description = "List of public subnet IDs"
-  value       = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id]
-}
-
-output "security_group_ids" {
-  description = "Security group IDs for ALB and ECS service"
-  value       = [aws_security_group.alb_sg.id, aws_security_group.ecs_service_sg.id]
-}
-
-output "cloudwatch_log_group_name" {
-  description = "CloudWatch log group for ECS tasks"
-  value       = aws_cloudwatch_log_group.fastapi_demo_log_group.name
-}
-
 output "deployment_contract" {
-  description = "Machine-readable deployment contract for the Deployment Agent"
+  description = "Canonical deployment contract for downstream deployment agent"
   value = {
     meta = {
       contract_version = "1.0"
       cloud            = "aws"
-      runtime          = "ecs_fargate"
-      application_type = "backend"
+      runtime          = "ecs"
+      application_type = "backend-only"
       environment      = var.environment
       region           = var.region
-      deployment_type  = "container"
+      deployment_type  = "fargate"
     }
 
     compute = {
       cluster_name = aws_ecs_cluster.fastapi_demo_cluster.name
       service_name = aws_ecs_service.fastapi_demo_service.name
       service_names = {
-        "fastapi-demo-service" = aws_ecs_service.fastapi_demo_service.name
+        "fastapi-demo-service" = local.service_images["fastapi-demo-service"]
       }
       task_family   = aws_ecs_task_definition.fastapi_demo_task_definition.family
       workload_name = aws_ecs_service.fastapi_demo_service.name
@@ -70,11 +50,11 @@ output "deployment_contract" {
       vpc_id             = aws_vpc.fastapi_demo_vpc.id
       subnet_ids         = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id]
       security_group_ids = [aws_security_group.alb_sg.id, aws_security_group.ecs_service_sg.id]
-      ingress_id         = aws_lb.fastapi_demo_alb.id
+      ingress_id         = aws_lb.alb.arn
     }
 
     routing = {
-      public_endpoint      = aws_lb.fastapi_demo_alb.dns_name
+      public_endpoint      = "http://${aws_lb.alb.dns_name}"
       internal_endpoint    = null
       custom_domain        = null
       certificate_required = false
@@ -97,9 +77,9 @@ output "deployment_contract" {
 
     health = {
       frontend_path  = null
-      backend_path   = var.health_check_path
-      readiness_path = null
-      liveness_path  = var.health_check_path
+      backend_path   = "/health"
+      readiness_path = "/health"
+      liveness_path  = "/health"
     }
   }
 }
