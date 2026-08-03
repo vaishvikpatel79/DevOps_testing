@@ -1,25 +1,25 @@
 output "alb_dns_name" {
   description = "Application Load Balancer DNS name"
-  value       = aws_lb.fastapi-demo-dev_alb.dns_name
+  value       = aws_lb.fastapi_demo_alb.dns_name
 }
 
 output "ecs_cluster_name" {
-  description = "ECS cluster name"
-  value       = aws_ecs_cluster.fastapi-demo-dev_cluster.name
+  description = "ECS Cluster name"
+  value       = aws_ecs_cluster.fastapi_demo_cluster.name
 }
 
 output "ecs_service_name" {
-  description = "ECS service name"
-  value       = aws_ecs_service.fastapi-demo-dev_service.name
+  description = "ECS Service name"
+  value       = aws_ecs_service.fastapi_demo_service.name
 }
 
 output "ecs_task_definition_arn" {
-  description = "ECS task definition ARN"
-  value       = aws_ecs_task_definition.fastapi-demo-dev_task_def.arn
+  description = "ECS Task Definition ARN"
+  value       = aws_ecs_task_definition.fastapi_demo_task.arn
 }
 
-output "ecr_image_uri" {
-  description = "Constructed ECR image URI for the service (from var.service_tags)"
+output "ecr_image_uri_fastapi_demo_service" {
+  description = "Constructed ECR image URI for fastapi-demo-service"
   value       = local.service_images["fastapi-demo-service"]
 }
 
@@ -28,54 +28,58 @@ output "deployment_contract" {
   value = {
     meta = {
       contract_version = "1.0"
-      cloud            = "aws"
-      runtime          = "ecs"
+      cloud = "aws"
+      runtime = "ECS Fargate"
       application_type = "backend"
-      environment      = var.environment
-      region           = var.region
-      deployment_type  = "fargate"
+      environment = var.environment
+      region = var.region
+      deployment_type = "container"
     }
 
     compute = {
-      cluster_name  = aws_ecs_cluster.fastapi-demo-dev_cluster.name
-      service_name  = aws_ecs_service.fastapi-demo-dev_service.name
-      service_names = { "fastapi-demo-service" = aws_ecs_service.fastapi-demo-dev_service.name }
-      task_family   = aws_ecs_task_definition.fastapi-demo-dev_task_def.family
+      cluster_name = aws_ecs_cluster.fastapi_demo_cluster.name
+      service_name = aws_ecs_service.fastapi_demo_service.name
+      service_names = {
+        "fastapi-demo-service" = aws_ecs_service.fastapi_demo_service.name
+      }
+      task_family = aws_ecs_task_definition.fastapi_demo_task.family
       workload_name = null
     }
 
     network = {
-      vpc_id             = aws_vpc.fastapi-demo-dev_vpc.id
-      subnet_ids         = [aws_subnet.fastapi-demo-dev_public_subnet_1.id, aws_subnet.fastapi-demo-dev_public_subnet_2.id]
-      security_group_ids = [aws_security_group.fastapi-demo-dev_alb_sg.id, aws_security_group.fastapi-demo-dev_ecs_sg.id]
-      ingress_id         = aws_internet_gateway.fastapi-demo-dev_igw.id
+      vpc_id = aws_vpc.fastapi_demo_vpc.id
+      subnet_ids = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id]
+      security_group_ids = [aws_security_group.alb_sg.id, aws_security_group.ecs_service_sg.id]
+      ingress_id = aws_lb.fastapi_demo_alb.arn
     }
 
     routing = {
-      public_endpoint       = "http://${aws_lb.fastapi-demo-dev_alb.dns_name}"
-      internal_endpoint     = null
-      custom_domain         = null
-      certificate_required  = false
-      certificate_mode      = null
+      public_endpoint = aws_lb.fastapi_demo_alb.dns_name
+      internal_endpoint = null
+      custom_domain = null
+      certificate_required = false
+      certificate_mode = null
     }
 
     data = {
-      database_endpoint    = null
-      cache_endpoint       = null
-      object_store_name    = null
+      database_endpoint = null
+      cache_endpoint = null
+      object_store_name = null
     }
 
     security = {
       certificate_ref = null
-      secret_refs     = null
-      role_arns       = { "task_execution_role" = aws_iam_role.fastapi-demo-dev_task_exec_role.arn }
+      secret_refs = null
+      role_arns = {
+        ecs_task_execution_role = aws_iam_role.ecs_task_execution_role.arn
+      }
     }
 
     health = {
-      frontend_path  = null
-      backend_path   = var.health_check_path
-      readiness_path = null
-      liveness_path  = null
+      frontend_path = null
+      backend_path = var.health_check_path
+      readiness_path = var.health_check_path
+      liveness_path = var.health_check_path
     }
   }
 }

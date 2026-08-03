@@ -5,51 +5,21 @@ variable "project_name" {
 }
 
 variable "environment" {
-  description = "Deployment environment (e.g., dev, prod)"
+  description = "Deployment environment (e.g. dev, staging, prod)"
   type        = string
   default     = "dev"
 }
 
 variable "region" {
-  description = "AWS region to deploy into"
+  description = "AWS region to deploy resources into"
   type        = string
   default     = "us-east-1"
 }
 
-variable "managed_by" {
-  description = "ManagedBy tag value"
+variable "account_id" {
+  description = "AWS account ID used to construct ECR image URIs."
   type        = string
-  default     = "terraform"
-}
-
-variable "vpc_cidr" {
-  description = "CIDR block for the VPC"
-  type        = string
-  default     = "10.0.0.0/16"
-}
-
-variable "public_subnet_1_cidr" {
-  description = "CIDR block for public subnet 1"
-  type        = string
-  default     = "10.0.1.0/24"
-}
-
-variable "public_subnet_2_cidr" {
-  description = "CIDR block for public subnet 2"
-  type        = string
-  default     = "10.0.2.0/24"
-}
-
-variable "az1" {
-  description = "Availability zone for public subnet 1"
-  type        = string
-  default     = "us-east-1a"
-}
-
-variable "az2" {
-  description = "Availability zone for public subnet 2"
-  type        = string
-  default     = "us-east-1b"
+  default     = "220897588425"
 }
 
 variable "service_tags" {
@@ -61,25 +31,61 @@ variable "service_tags" {
 variable "service_repositories" {
   description = "Map of logical service name to container repository name."
   type        = map(string)
-  default     = { "fastapi-demo-service" = "fastapi-demo-service" }
+  default     = {}
 }
 
-variable "account_id" {
-  description = "AWS account ID used to construct ECR image URIs."
+variable "vpc_cidr" {
+  description = "CIDR block for the VPC"
   type        = string
-  default     = "220897588425"
+  default     = "10.0.0.0/16"
 }
 
-variable "container_cpu" {
-  description = "CPU units for the container/task"
-  type        = number
-  default     = 256
+variable "enable_dns_support" {
+  description = "Enable DNS support for the VPC"
+  type        = bool
+  default     = true
 }
 
-variable "container_memory" {
-  description = "Memory (MB) for the container/task"
+variable "enable_dns_hostnames" {
+  description = "Enable DNS hostnames for the VPC"
+  type        = bool
+  default     = true
+}
+
+variable "public_subnet_1_cidr" {
+  description = "CIDR block for public subnet 1"
+  type        = string
+  default     = "10.0.1.0/24"
+}
+
+variable "public_subnet_1_az" {
+  description = "Availability zone for public subnet 1"
+  type        = string
+  default     = "us-east-1a"
+}
+
+variable "public_subnet_2_cidr" {
+  description = "CIDR block for public subnet 2"
+  type        = string
+  default     = "10.0.2.0/24"
+}
+
+variable "public_subnet_2_az" {
+  description = "Availability zone for public subnet 2"
+  type        = string
+  default     = "us-east-1b"
+}
+
+variable "listener_port" {
+  description = "Port for the ALB listener"
   type        = number
-  default     = 512
+  default     = 80
+}
+
+variable "lb_scheme" {
+  description = "Scheme for the load balancer (internet-facing or internal)."
+  type        = string
+  default     = "internet-facing"
 }
 
 variable "container_port" {
@@ -88,32 +94,26 @@ variable "container_port" {
   default     = 8000
 }
 
-variable "desired_count" {
-  description = "Desired number of task instances for the ECS service"
+variable "task_cpu" {
+  description = "Task CPU units for the ECS task"
+  type        = number
+  default     = 256
+}
+
+variable "task_memory" {
+  description = "Task memory (MB) for the ECS task"
+  type        = number
+  default     = 512
+}
+
+variable "desired_task_count" {
+  description = "Desired number of ECS tasks for the service"
   type        = number
   default     = 1
 }
 
 variable "health_check_path" {
-  description = "HTTP health check path for target group"
+  description = "HTTP health check path for the service"
   type        = string
   default     = "/health"
-}
-
-variable "health_check_interval" {
-  description = "Interval (seconds) between health checks"
-  type        = number
-  default     = 30
-}
-
-variable "healthy_threshold" {
-  description = "Number of consecutive successful checks before considering target healthy"
-  type        = number
-  default     = 2
-}
-
-variable "unhealthy_threshold" {
-  description = "Number of consecutive failed checks before considering target unhealthy"
-  type        = number
-  default     = 3
 }
