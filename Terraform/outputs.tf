@@ -1,6 +1,6 @@
 output "alb_dns_name" {
   description = "Application Load Balancer DNS name"
-  value       = aws_lb.application_lb.dns_name
+  value       = aws_lb.app_lb.dns_name
 }
 
 output "ecs_cluster_name" {
@@ -8,7 +8,8 @@ output "ecs_cluster_name" {
   value       = aws_ecs_cluster.fastapi_demo_cluster.name
 }
 
-output "ecs_service_name" {\n  description = "ECS Service name"
+output "ecs_service_name" {
+  description = "ECS Service name"
   value       = aws_ecs_service.fastapi_demo_service.name
 }
 
@@ -23,37 +24,35 @@ output "ecr_image_uri" {
 }
 
 output "deployment_contract" {
-  description = "Canonical deployment contract for the deployment agent"
+  description = "Deployment contract for consumption by deployment agent"
   value = {
     meta = {
-      contract_version = "1.0"
+      contract_version = "1"
       cloud = "aws"
-      runtime = "ecs"
-      application_type = "Backend-only app"
+      runtime = "ecs_fargate"
+      application_type = "backend-only"
       environment = var.environment
       region = var.region
-      deployment_type = "managed"
+      deployment_type = "public"
     }
 
     compute = {
       cluster_name = aws_ecs_cluster.fastapi_demo_cluster.name
       service_name = aws_ecs_service.fastapi_demo_service.name
-      service_names = {
-        "fastapi-demo-service" = aws_ecs_service.fastapi_demo_service.name
-      }
+      service_names = { "fastapi-demo-service" = aws_ecs_service.fastapi_demo_service.name }
       task_family = aws_ecs_task_definition.fastapi_demo_task.family
-      workload_name = null
+      workload_name = aws_ecs_service.fastapi_demo_service.name
     }
 
     network = {
       vpc_id = aws_vpc.fastapi_demo_vpc.id
       subnet_ids = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id]
       security_group_ids = [aws_security_group.alb_sg.id, aws_security_group.ecs_service_sg.id]
-      ingress_id = aws_lb.application_lb.arn
+      ingress_id = null
     }
 
     routing = {
-      public_endpoint = aws_lb.application_lb.dns_name
+      public_endpoint = aws_lb.app_lb.dns_name
       internal_endpoint = null
       custom_domain = null
       certificate_required = false
@@ -69,9 +68,7 @@ output "deployment_contract" {
     security = {
       certificate_ref = null
       secret_refs = null
-      role_arns = {
-        ecs_task_execution_role = aws_iam_role.ecs_task_execution_role.arn
-      }
+      role_arns = { "ecs_task_execution_role" = aws_iam_role.ecs_task_execution_role.arn }
     }
 
     health = {

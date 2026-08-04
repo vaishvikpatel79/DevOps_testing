@@ -5,21 +5,45 @@ variable "project_name" {
 }
 
 variable "environment" {
-  description = "Deployment environment"
+  description = "Deployment environment (dev, prod, etc.)"
   type        = string
   default     = "dev"
 }
 
 variable "region" {
-  description = "AWS region for deployment"
+  description = "AWS region to deploy into"
   type        = string
   default     = "us-east-1"
 }
 
-variable "account_id" {
-  description = "AWS account ID used to construct ECR image URIs."
+variable "vpc_cidr" {
+  description = "CIDR block for the VPC"
   type        = string
-  default     = "220897588425"
+  default     = "10.0.0.0/16"
+}
+
+variable "public_subnet_1_cidr" {
+  description = "CIDR block for public subnet 1"
+  type        = string
+  default     = "10.0.1.0/24"
+}
+
+variable "public_subnet_2_cidr" {
+  description = "CIDR block for public subnet 2"
+  type        = string
+  default     = "10.0.2.0/24"
+}
+
+variable "public_subnet_1_az" {
+  description = "Availability zone for public subnet 1"
+  type        = string
+  default     = "us-east-1a"
+}
+
+variable "public_subnet_2_az" {
+  description = "Availability zone for public subnet 2"
+  type        = string
+  default     = "us-east-1b"
 }
 
 variable "service_tags" {
@@ -34,52 +58,9 @@ variable "service_repositories" {
   default     = {}
 }
 
-variable "vpc_cidr" {
-  description = "CIDR block for the VPC"
+variable "account_id" {
+  description = "AWS account ID used to construct ECR image URIs."
   type        = string
-  default     = "10.0.0.0/16"
-}
-
-variable "dns_hostnames_enabled" {
-  description = "Enable DNS hostnames on the VPC"
-  type        = bool
-  default     = true
-}
-
-variable "dns_resolution_enabled" {
-  description = "Enable DNS resolution on the VPC"
-  type        = bool
-  default     = true
-}
-
-variable "subnet1_cidr" {
-  description = "CIDR block for public subnet 1"
-  type        = string
-  default     = "10.0.1.0/24"
-}
-
-variable "subnet2_cidr" {
-  description = "CIDR block for public subnet 2"
-  type        = string
-  default     = "10.0.2.0/24"
-}
-
-variable "az1" {
-  description = "Availability zone for subnet 1"
-  type        = string
-  default     = "us-east-1a"
-}
-
-variable "az2" {
-  description = "Availability zone for subnet 2"
-  type        = string
-  default     = "us-east-1b"
-}
-
-variable "assign_public_ip" {
-  description = "Whether to auto-assign public IPs on public subnets"
-  type        = bool
-  default     = true
 }
 
 variable "container_port" {
@@ -88,22 +69,40 @@ variable "container_port" {
   default     = 8000
 }
 
-variable "cpu" {
-  description = "CPU units for the task/container"
+variable "cpu_units" {
+  description = "Container CPU units"
   type        = number
   default     = 256
 }
 
-variable "memory" {
-  description = "Memory (MB) for the task/container"
+variable "memory_mb" {
+  description = "Container memory in MB"
   type        = number
   default     = 512
 }
 
-variable "desired_count" {
-  description = "Desired number of ECS tasks for the service"
+variable "fargate_cpu" {
+  description = "Fargate task CPU (string as required by task_definition)"
+  type        = string
+  default     = "256"
+}
+
+variable "fargate_memory" {
+  description = "Fargate task memory (string as required by task_definition)"
+  type        = string
+  default     = "512"
+}
+
+variable "desired_task_count" {
+  description = "Desired number of task instances for the ECS service"
   type        = number
   default     = 1
+}
+
+variable "alb_port" {
+  description = "Port for the Application Load Balancer listener"
+  type        = number
+  default     = 80
 }
 
 variable "health_check_path" {
@@ -112,20 +111,8 @@ variable "health_check_path" {
   default     = "/health"
 }
 
-variable "health_check_interval_seconds" {
-  description = "Interval seconds for health checks"
-  type        = number
-  default     = 30
-}
-
-variable "healthy_threshold_count" {
-  description = "Healthy threshold count for target group health check"
-  type        = number
-  default     = 2
-}
-
-variable "unhealthy_threshold_count" {
-  description = "Unhealthy threshold count for target group health check"
-  type        = number
-  default     = 3
+variable "managed_by" {
+  description = "Tag value for ManagedBy"
+  type        = string
+  default     = "terraform"
 }
