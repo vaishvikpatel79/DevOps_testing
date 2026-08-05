@@ -5,13 +5,13 @@ variable "project_name" {
 }
 
 variable "environment" {
-  description = "Deployment environment (dev/stage/prod)"
+  description = "Deployment environment"
   type        = string
   default     = "dev"
 }
 
 variable "region" {
-  description = "AWS region to deploy into"
+  description = "AWS region to deploy resources in"
   type        = string
   default     = "us-east-1"
 }
@@ -40,106 +40,70 @@ variable "vpc_cidr" {
   default     = "10.0.0.0/16"
 }
 
-variable "enable_dns_hostnames" {
-  description = "Enable DNS hostnames on the VPC"
-  type        = bool
-  default     = true
+variable "public_subnet_cidrs" {
+  description = "List of CIDRs for public subnets"
+  type        = list(string)
+  default     = ["10.0.1.0/24", "10.0.2.0/24"]
 }
 
-variable "enable_dns_support" {
-  description = "Enable DNS resolution on the VPC"
-  type        = bool
-  default     = true
+variable "public_subnet_azs" {
+  description = "List of availability zones for public subnets"
+  type        = list(string)
+  default     = ["us-east-1a", "us-east-1b"]
 }
 
-variable "public_subnet_1_cidr" {
-  description = "CIDR block for public subnet 1"
-  type        = string
-  default     = "10.0.1.0/24"
-}
-
-variable "public_subnet_2_cidr" {
-  description = "CIDR block for public subnet 2"
-  type        = string
-  default     = "10.0.2.0/24"
-}
-
-variable "public_subnet_1_az" {
-  description = "Availability zone for public subnet 1"
-  type        = string
-  default     = "us-east-1a"
-}
-
-variable "public_subnet_2_az" {
-  description = "Availability zone for public subnet 2"
-  type        = string
-  default     = "us-east-1b"
-}
-
-variable "task_desired_count" {
-  description = "Desired number of ECS tasks for the service"
+variable "desired_task_count" {
+  description = "Number of desired ECS tasks for the service"
   type        = number
   default     = 1
 }
 
-variable "container_cpu_units" {
-  description = "CPU units for the container"
-  type        = number
-  default     = 256
+variable "container_cpu" {
+  description = "CPU units for the Fargate task (string expected by task definition)"
+  type        = string
+  default     = "256"
 }
 
-variable "container_memory_mb" {
-  description = "Memory (MB) for the container"
-  type        = number
-  default     = 512
+variable "container_memory" {
+  description = "Memory (MiB) for the Fargate task (string expected by task definition)"
+  type        = string
+  default     = "512"
 }
 
 variable "container_port" {
-  description = "Port the container listens on"
+  description = "Container port that the application listens on"
   type        = number
   default     = 8000
 }
 
+variable "read_only_root_filesystem" {
+  description = "Whether the container root filesystem is read-only"
+  type        = bool
+  default     = false
+}
+
 variable "health_check_path" {
-  description = "HTTP health check path for the target group"
+  description = "Health check path for the target group"
   type        = string
   default     = "/health"
 }
 
-variable "health_check_protocol" {
-  description = "Protocol used by the target group health check"
-  type        = string
-  default     = "HTTP"
-}
-
-variable "health_check_port" {
-  description = "Health check port for the target group (use 'traffic-port' or numeric)"
-  type        = string
-  default     = "traffic-port"
-}
-
-variable "healthy_threshold_count" {
-  description = "Healthy threshold count for target group health checks"
-  type        = number
-  default     = 2
-}
-
-variable "unhealthy_threshold_count" {
-  description = "Unhealthy threshold count for target group health checks"
-  type        = number
-  default     = 3
-}
-
 variable "health_check_interval_seconds" {
-  description = "Interval seconds for target group health checks"
+  description = "Interval in seconds between health checks"
   type        = number
   default     = 30
 }
 
-variable "alb_port" {
-  description = "Port for the Application Load Balancer listener"
+variable "health_check_healthy_threshold" {
+  description = "Healthy threshold for the target group health check"
   type        = number
-  default     = 80
+  default     = 2
+}
+
+variable "health_check_unhealthy_threshold" {
+  description = "Unhealthy threshold for the target group health check"
+  type        = number
+  default     = 3
 }
 
 variable "managed_by" {
