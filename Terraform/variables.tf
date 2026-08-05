@@ -1,5 +1,5 @@
 variable "project_name" {
-  description = "Project name used as part of resource names"
+  description = "Project name used in resource naming"
   type        = string
   default     = "fastapi-demo"
 }
@@ -11,9 +11,15 @@ variable "environment" {
 }
 
 variable "region" {
-  description = "AWS region to deploy resources into"
+  description = "AWS region to deploy into"
   type        = string
   default     = "us-east-1"
+}
+
+variable "managed_by" {
+  description = "ManagedBy tag value"
+  type        = string
+  default     = "terraform"
 }
 
 variable "account_id" {
@@ -31,51 +37,19 @@ variable "service_tags" {
 variable "service_repositories" {
   description = "Map of logical service name to container repository name."
   type        = map(string)
-  default     = {
-    "fastapi-demo-service" = "fastapi-demo-service"
-  }
+  default     = {}
 }
 
-variable "vpc_cidr" {
-  description = "CIDR block for the VPC"
-  type        = string
-  default     = "10.0.0.0/16"
-}
-
-variable "public_subnet_1_cidr" {
-  description = "CIDR block for public subnet 1"
-  type        = string
-  default     = "10.0.1.0/24"
-}
-
-variable "public_subnet_2_cidr" {
-  description = "CIDR block for public subnet 2"
-  type        = string
-  default     = "10.0.2.0/24"
-}
-
-variable "public_subnet_1_az" {
+variable "az1" {
   description = "Availability zone for public subnet 1"
   type        = string
   default     = "us-east-1a"
 }
 
-variable "public_subnet_2_az" {
+variable "az2" {
   description = "Availability zone for public subnet 2"
   type        = string
   default     = "us-east-1b"
-}
-
-variable "public_subnet_1_map_public_ip" {
-  description = "Whether to auto-assign public IPs for subnet 1"
-  type        = bool
-  default     = true
-}
-
-variable "public_subnet_2_map_public_ip" {
-  description = "Whether to auto-assign public IPs for subnet 2"
-  type        = bool
-  default     = true
 }
 
 variable "desired_task_count" {
@@ -97,15 +71,9 @@ variable "container_memory" {
 }
 
 variable "container_port" {
-  description = "Port the container listens on"
+  description = "Container port the application listens on"
   type        = number
   default     = 8000
-}
-
-variable "read_only_root_filesystem" {
-  description = "Whether the container root filesystem is read-only"
-  type        = bool
-  default     = false
 }
 
 variable "health_check_path" {
@@ -114,26 +82,32 @@ variable "health_check_path" {
   default     = "/health"
 }
 
-variable "health_check_interval_seconds" {
-  description = "Health check interval in seconds for target group"
-  type        = number
-  default     = 30
+variable "health_check_port" {
+  description = "Health check port for target group"
+  type        = string
+  default     = "traffic-port"
+}
+
+variable "health_check_protocol" {
+  description = "Health check protocol for target group"
+  type        = string
+  default     = "HTTP"
 }
 
 variable "healthy_threshold_count" {
-  description = "Healthy threshold count for target group health check"
+  description = "Healthy threshold count for target group health checks"
   type        = number
   default     = 2
 }
 
 variable "unhealthy_threshold_count" {
-  description = "Unhealthy threshold count for target group health check"
+  description = "Unhealthy threshold count for target group health checks"
   type        = number
   default     = 3
 }
 
-variable "managed_by" {
-  description = "Tag value for ManagedBy"
-  type        = string
-  default     = "terraform"
+variable "health_check_interval_seconds" {
+  description = "Interval seconds for target group health checks"
+  type        = number
+  default     = 30
 }

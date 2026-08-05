@@ -8,10 +8,10 @@ locals {
   }
 }
 
-resource "aws_vpc" "fastapi_demo_vpc" {
-  cidr_block           = var.vpc_cidr
-  enable_dns_support   = true
+resource "aws_vpc" "fastapi_demo_dev_vpc" {
+  cidr_block           = "10.0.0.0/16"
   enable_dns_hostnames = true
+  enable_dns_support   = true
 
   tags = {
     Name        = "${var.project_name}-${var.environment}-vpc"
@@ -21,8 +21,36 @@ resource "aws_vpc" "fastapi_demo_vpc" {
   }
 }
 
+resource "aws_subnet" "fastapi_demo_public_subnet_1" {
+  vpc_id                  = aws_vpc.fastapi_demo_dev_vpc.id
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = var.az1
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-pubsub1"
+    Environment = var.environment
+    Project     = var.project_name
+    ManagedBy   = var.managed_by
+  }
+}
+
+resource "aws_subnet" "fastapi_demo_public_subnet_2" {
+  vpc_id                  = aws_vpc.fastapi_demo_dev_vpc.id
+  cidr_block              = "10.0.2.0/24"
+  availability_zone       = var.az2
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-pubsub2"
+    Environment = var.environment
+    Project     = var.project_name
+    ManagedBy   = var.managed_by
+  }
+}
+
 resource "aws_internet_gateway" "fastapi_demo_igw" {
-  vpc_id = aws_vpc.fastapi_demo_vpc.id
+  vpc_id = aws_vpc.fastapi_demo_dev_vpc.id
 
   tags = {
     Name        = "${var.project_name}-${var.environment}-igw"
@@ -33,7 +61,7 @@ resource "aws_internet_gateway" "fastapi_demo_igw" {
 }
 
 resource "aws_route_table" "fastapi_demo_public_rt" {
-  vpc_id = aws_vpc.fastapi_demo_vpc.id
+  vpc_id = aws_vpc.fastapi_demo_dev_vpc.id
 
   tags = {
     Name        = "${var.project_name}-${var.environment}-public-rt"
@@ -43,54 +71,26 @@ resource "aws_route_table" "fastapi_demo_public_rt" {
   }
 }
 
-resource "aws_route" "fastapi_demo_public_route" {
+resource "aws_route" "fastapi_demo_public_rt_default_route" {
   route_table_id         = aws_route_table.fastapi_demo_public_rt.id
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = aws_internet_gateway.fastapi_demo_igw.id
 }
 
-resource "aws_subnet" "public_subnet_1" {
-  vpc_id                  = aws_vpc.fastapi_demo_vpc.id
-  cidr_block              = var.public_subnet_1_cidr
-  availability_zone       = var.public_subnet_1_az
-  map_public_ip_on_launch = var.public_subnet_1_map_public_ip
-
-  tags = {
-    Name        = "${var.project_name}-${var.environment}-public-subnet-1"
-    Environment = var.environment
-    Project     = var.project_name
-    ManagedBy   = var.managed_by
-  }
-}
-
-resource "aws_subnet" "public_subnet_2" {
-  vpc_id                  = aws_vpc.fastapi_demo_vpc.id
-  cidr_block              = var.public_subnet_2_cidr
-  availability_zone       = var.public_subnet_2_az
-  map_public_ip_on_launch = var.public_subnet_2_map_public_ip
-
-  tags = {
-    Name        = "${var.project_name}-${var.environment}-public-subnet-2"
-    Environment = var.environment
-    Project     = var.project_name
-    ManagedBy   = var.managed_by
-  }
-}
-
-resource "aws_route_table_association" "public_assoc_subnet_1" {
-  subnet_id      = aws_subnet.public_subnet_1.id
+resource "aws_route_table_association" "fastapi_demo_pubsub1_assoc" {
+  subnet_id      = aws_subnet.fastapi_demo_public_subnet_1.id
   route_table_id = aws_route_table.fastapi_demo_public_rt.id
 }
 
-resource "aws_route_table_association" "public_assoc_subnet_2" {
-  subnet_id      = aws_subnet.public_subnet_2.id
+resource "aws_route_table_association" "fastapi_demo_pubsub2_assoc" {
+  subnet_id      = aws_subnet.fastapi_demo_public_subnet_2.id
   route_table_id = aws_route_table.fastapi_demo_public_rt.id
 }
 
-resource "aws_security_group" "alb_sg" {
+resource "aws_security_group" "fastapi_demo_alb_sg" {
   name        = "${var.project_name}-${var.environment}-alb-sg"
   description = "Security group for ALB"
-  vpc_id      = aws_vpc.fastapi_demo_vpc.id
+  vpc_id      = aws_vpc.fastapi_demo_dev_vpc.id
 
   tags = {
     Name        = "${var.project_name}-${var.environment}-alb-sg"
@@ -100,10 +100,10 @@ resource "aws_security_group" "alb_sg" {
   }
 }
 
-resource "aws_security_group" "ecs_service_sg" {
+resource "aws_security_group" "fastapi_demo_ecs_service_sg" {
   name        = "${var.project_name}-${var.environment}-ecs-sg"
   description = "Security group for ECS tasks"
-  vpc_id      = aws_vpc.fastapi_demo_vpc.id
+  vpc_id      = aws_vpc.fastapi_demo_dev_vpc.id
 
   tags = {
     Name        = "${var.project_name}-${var.environment}-ecs-sg"
@@ -113,48 +113,109 @@ resource "aws_security_group" "ecs_service_sg" {
   }
 }
 
-resource "aws_security_group_rule" "alb_allow_http_inbound" {
+resource "aws_security_group_rule" "fastapi_demo_alb_ingress_http" {
   type              = "ingress"
   from_port         = 80
   to_port           = 80
   protocol          = "tcp"
+  security_group_id = aws_security_group.fastapi_demo_alb_sg.id
   cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.alb_sg.id
   description       = "Allow HTTP from anywhere"
 }
 
-resource "aws_security_group_rule" "alb_allow_all_outbound_to_ecs" {
+resource "aws_security_group_rule" "fastapi_demo_alb_egress_all" {
   type              = "egress"
   from_port         = 0
   to_port           = 0
   protocol          = "-1"
+  security_group_id = aws_security_group.fastapi_demo_alb_sg.id
   cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.alb_sg.id
-  description       = "Allow all outbound from ALB"
+  description       = "Allow all outbound traffic from ALB"
 }
 
-resource "aws_security_group_rule" "ecs_allow_8000_inbound_from_alb" {
-  type                     = "ingress"
-  from_port                = var.container_port
-  to_port                  = var.container_port
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.ecs_service_sg.id
-  source_security_group_id = aws_security_group.alb_sg.id
-  description              = "Allow ALB to reach ECS tasks on container port"
+resource "aws_security_group_rule" "fastapi_demo_ecs_ingress_8000" {
+  type                         = "ingress"
+  from_port                    = 8000
+  to_port                      = 8000
+  protocol                     = "tcp"
+  security_group_id            = aws_security_group.fastapi_demo_ecs_service_sg.id
+  source_security_group_id     = aws_security_group.fastapi_demo_alb_sg.id
+  description                  = "Allow ALB to reach ECS tasks on 8000"
 }
 
-resource "aws_security_group_rule" "ecs_allow_all_outbound" {
+resource "aws_security_group_rule" "fastapi_demo_ecs_egress_all" {
   type              = "egress"
   from_port         = 0
   to_port           = 0
   protocol          = "-1"
+  security_group_id = aws_security_group.fastapi_demo_ecs_service_sg.id
   cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.ecs_service_sg.id
-  description       = "Allow all outbound from ECS tasks"
+  description       = "Allow all outbound traffic from ECS tasks"
 }
 
-resource "aws_iam_role" "ecs_task_execution_role" {
-  name = "${var.project_name}-${var.environment}-ecs-task-execution-role"
+resource "aws_lb_target_group" "fastapi_demo_tg" {
+  name        = "${var.project_name}-${var.environment}-tg"
+  port        = var.container_port
+  protocol    = var.health_check_protocol
+  target_type = "ip"
+  vpc_id      = aws_vpc.fastapi_demo_dev_vpc.id
+
+  health_check {
+    path                = var.health_check_path
+    port                = var.health_check_port
+    protocol            = var.health_check_protocol
+    healthy_threshold   = var.healthy_threshold_count
+    unhealthy_threshold = var.unhealthy_threshold_count
+    interval            = var.health_check_interval_seconds
+  }
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-tg"
+    Environment = var.environment
+    Project     = var.project_name
+    ManagedBy   = var.managed_by
+  }
+}
+
+resource "aws_lb" "fastapi_demo_alb" {
+  name               = "${var.project_name}-${var.environment}-alb"
+  internal           = false
+  load_balancer_type = "application"
+  subnets            = [aws_subnet.fastapi_demo_public_subnet_1.id, aws_subnet.fastapi_demo_public_subnet_2.id]
+  security_groups    = [aws_security_group.fastapi_demo_alb_sg.id]
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-alb"
+    Environment = var.environment
+    Project     = var.project_name
+    ManagedBy   = var.managed_by
+  }
+}
+
+resource "aws_lb_listener" "fastapi_demo_http_listener" {
+  load_balancer_arn = aws_lb.fastapi_demo_alb.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.fastapi_demo_tg.arn
+  }
+}
+
+resource "aws_cloudwatch_log_group" "fastapi_demo_ecs_log_group" {
+  name = "/ecs/${var.project_name}-${var.environment}"
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-loggroup"
+    Environment = var.environment
+    Project     = var.project_name
+    ManagedBy   = var.managed_by
+  }
+}
+
+resource "aws_iam_role" "fastapi_demo_task_execution_role" {
+  name = "${var.project_name}-${var.environment}-task-exec-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -162,35 +223,22 @@ resource "aws_iam_role" "ecs_task_execution_role" {
       {
         Action = "sts:AssumeRole"
         Effect = "Allow"
-        Principal = {
-          Service = "ecs-tasks.amazonaws.com"
-        }
+        Principal = { Service = "ecs-tasks.amazonaws.com" }
       }
     ]
   })
 
   tags = {
-    Name        = "${var.project_name}-${var.environment}-ecs-task-execution-role"
+    Name        = "${var.project_name}-${var.environment}-task-exec-role"
     Environment = var.environment
     Project     = var.project_name
     ManagedBy   = var.managed_by
   }
 }
 
-resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_attach_policy" {
-  role       = aws_iam_role.ecs_task_execution_role.name
+resource "aws_iam_role_policy_attachment" "fastapi_demo_task_execution_role_attachment" {
+  role       = aws_iam_role.fastapi_demo_task_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-}
-
-resource "aws_cloudwatch_log_group" "fastapi_demo_log_group" {
-  name = "/ecs/${var.project_name}-${var.environment}"
-
-  tags = {
-    Name        = "${var.project_name}-${var.environment}-log-group"
-    Environment = var.environment
-    Project     = var.project_name
-    ManagedBy   = var.managed_by
-  }
 }
 
 resource "aws_ecs_cluster" "fastapi_demo_cluster" {
@@ -204,84 +252,31 @@ resource "aws_ecs_cluster" "fastapi_demo_cluster" {
   }
 }
 
-resource "aws_lb" "fastapi_demo_alb" {
-  name               = "${var.project_name}-${var.environment}-alb"
-  internal           = false
-  load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb_sg.id]
-  subnets            = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id]
-
-  tags = {
-    Name        = "${var.project_name}-${var.environment}-alb"
-    Environment = var.environment
-    Project     = var.project_name
-    ManagedBy   = var.managed_by
-  }
-}
-
-resource "aws_lb_target_group" "fastapi_demo_tg" {
-  name     = "${var.project_name}-${var.environment}-tg"
-  port     = var.container_port
-  protocol = "HTTP"
-  vpc_id   = aws_vpc.fastapi_demo_vpc.id
-  target_type = "ip"
-
-  health_check {
-    path                = var.health_check_path
-    protocol            = "HTTP"
-    interval            = var.health_check_interval_seconds
-    healthy_threshold   = var.healthy_threshold_count
-    unhealthy_threshold = var.unhealthy_threshold_count
-    matcher             = "200"
-  }
-
-  tags = {
-    Name        = "${var.project_name}-${var.environment}-tg"
-    Environment = var.environment
-    Project     = var.project_name
-    ManagedBy   = var.managed_by
-  }
-}
-
-resource "aws_lb_listener" "http_listener" {
-  load_balancer_arn = aws_lb.fastapi_demo_alb.arn
-  port              = 80
-  protocol          = "HTTP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.fastapi_demo_tg.arn
-  }
-}
-
-resource "aws_ecs_task_definition" "fastapi_demo_task" {
+resource "aws_ecs_task_definition" "fastapi_demo_task_def" {
   family                   = "${var.project_name}-${var.environment}-task"
-  cpu                      = tostring(var.container_cpu)
-  memory                   = tostring(var.container_memory)
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  cpu                      = tostring(var.container_cpu)
+  memory                   = tostring(var.container_memory)
+  execution_role_arn       = aws_iam_role.fastapi_demo_task_execution_role.arn
 
   container_definitions = jsonencode([
     {
       name  = "fastapi-demo-service"
       image = local.service_images["fastapi-demo-service"]
-      cpu   = var.container_cpu
-      memory = var.container_memory
       essential = true
       portMappings = [
         {
           containerPort = var.container_port
-          protocol = "tcp"
+          protocol      = "tcp"
         }
       ]
-      readonlyRootFilesystem = var.read_only_root_filesystem
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          awslogs-group         = aws_cloudwatch_log_group.fastapi_demo_log_group.name
-          awslogs-region        = var.region
-          awslogs-stream-prefix = "ecs"
+          "awslogs-group"         = aws_cloudwatch_log_group.fastapi_demo_ecs_log_group.name
+          "awslogs-region"        = var.region
+          "awslogs-stream-prefix" = var.project_name
         }
       }
     }
@@ -298,14 +293,14 @@ resource "aws_ecs_task_definition" "fastapi_demo_task" {
 resource "aws_ecs_service" "fastapi_demo_service" {
   name            = "${var.project_name}-${var.environment}-service"
   cluster         = aws_ecs_cluster.fastapi_demo_cluster.id
-  task_definition = aws_ecs_task_definition.fastapi_demo_task.arn
+  task_definition = aws_ecs_task_definition.fastapi_demo_task_def.arn
   desired_count   = var.desired_task_count
   launch_type     = "FARGATE"
 
   network_configuration {
     awsvpc_configuration {
-      subnets         = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id]
-      security_groups = [aws_security_group.ecs_service_sg.id]
+      subnets         = [aws_subnet.fastapi_demo_public_subnet_1.id, aws_subnet.fastapi_demo_public_subnet_2.id]
+      security_groups = [aws_security_group.fastapi_demo_ecs_service_sg.id]
       assign_public_ip = "ENABLED"
     }
   }
@@ -316,9 +311,7 @@ resource "aws_ecs_service" "fastapi_demo_service" {
     container_port   = var.container_port
   }
 
-  depends_on = [
-    aws_lb_listener.http_listener
-  ]
+  depends_on = [aws_lb_listener.fastapi_demo_http_listener]
 
   tags = {
     Name        = "${var.project_name}-${var.environment}-service"
