@@ -5,4 +5,3 @@ service_tags = {
 service_repositories = {
   "fastapi-demo-service"  = "devops-testing-fastapi-demo-service"
 }
-
