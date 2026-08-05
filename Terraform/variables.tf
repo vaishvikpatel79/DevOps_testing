@@ -1,23 +1,23 @@
 variable "project_name" {
-  description = "Project name used for resource naming"
+  description = "Project name used in resource naming"
   type        = string
   default     = "fastapi-demo"
 }
 
 variable "environment" {
-  description = "Deployment environment"
+  description = "Deployment environment (dev/stage/prod)"
   type        = string
   default     = "dev"
 }
 
 variable "region" {
-  description = "AWS region to deploy resources in"
+  description = "AWS region to deploy into"
   type        = string
   default     = "us-east-1"
 }
 
 variable "account_id" {
-  description = "AWS account ID used to construct ECR image URIs."
+  description = "AWS account ID used to construct ECR image URIs. Provided in requirements."
   type        = string
   default     = "220897588425"
 }
@@ -34,80 +34,68 @@ variable "service_repositories" {
   default     = {}
 }
 
+variable "service_name" {
+  description = "Primary ECS service name"
+  type        = string
+  default     = "fastapi-demo-service"
+}
+
 variable "vpc_cidr" {
   description = "CIDR block for the VPC"
   type        = string
   default     = "10.0.0.0/16"
 }
 
-variable "public_subnet_cidrs" {
-  description = "List of CIDRs for public subnets"
-  type        = list(string)
-  default     = ["10.0.1.0/24", "10.0.2.0/24"]
+variable "subnet_public_1_cidr" {
+  description = "CIDR block for public subnet 1"
+  type        = string
+  default     = "10.0.1.0/24"
 }
 
-variable "public_subnet_azs" {
-  description = "List of availability zones for public subnets"
-  type        = list(string)
-  default     = ["us-east-1a", "us-east-1b"]
+variable "subnet_public_2_cidr" {
+  description = "CIDR block for public subnet 2"
+  type        = string
+  default     = "10.0.2.0/24"
 }
 
-variable "desired_task_count" {
-  description = "Number of desired ECS tasks for the service"
+variable "az1" {
+  description = "Availability zone for subnet 1"
+  type        = string
+  default     = "us-east-1a"
+}
+
+variable "az2" {
+  description = "Availability zone for subnet 2"
+  type        = string
+  default     = "us-east-1b"
+}
+
+variable "listener_port" {
+  description = "Port for the ALB listener"
   type        = number
-  default     = 1
-}
-
-variable "container_cpu" {
-  description = "CPU units for the Fargate task (string expected by task definition)"
-  type        = string
-  default     = "256"
-}
-
-variable "container_memory" {
-  description = "Memory (MiB) for the Fargate task (string expected by task definition)"
-  type        = string
-  default     = "512"
+  default     = 80
 }
 
 variable "container_port" {
-  description = "Container port that the application listens on"
+  description = "Container port exposed by the application"
   type        = number
   default     = 8000
 }
 
-variable "read_only_root_filesystem" {
-  description = "Whether the container root filesystem is read-only"
-  type        = bool
-  default     = false
-}
-
-variable "health_check_path" {
-  description = "Health check path for the target group"
-  type        = string
-  default     = "/health"
-}
-
-variable "health_check_interval_seconds" {
-  description = "Interval in seconds between health checks"
+variable "cpu_units" {
+  description = "CPU units for the container/task"
   type        = number
-  default     = 30
+  default     = 256
 }
 
-variable "health_check_healthy_threshold" {
-  description = "Healthy threshold for the target group health check"
+variable "memory_mb" {
+  description = "Memory (MB) for the container/task"
   type        = number
-  default     = 2
+  default     = 512
 }
 
-variable "health_check_unhealthy_threshold" {
-  description = "Unhealthy threshold for the target group health check"
+variable "desired_count" {
+  description = "Desired number of ECS tasks for the service"
   type        = number
-  default     = 3
-}
-
-variable "managed_by" {
-  description = "Tag value for ManagedBy"
-  type        = string
-  default     = "terraform"
+  default     = 1
 }
