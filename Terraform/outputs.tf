@@ -1,68 +1,98 @@
 output "alb_dns_name" {
-  description = "Application Load Balancer DNS name"
-  value       = aws_lb.application_load_balancer.dns_name
+  description = "DNS name of the Application Load Balancer"
+  value       = aws_lb.app_alb.dns_name
+}
+
+output "alb_arn" {
+  description = "ARN of the Application Load Balancer"
+  value       = aws_lb.app_alb.arn
 }
 
 output "ecs_cluster_name" {
   description = "ECS cluster name"
-  value       = aws_ecs_cluster.ecs_cluster.name
+  value       = aws_ecs_cluster.fastapi_demo_cluster.name
 }
 
 output "ecs_service_name" {
   description = "ECS service name"
-  value       = aws_ecs_service.fastapi_ecs_service.name
+  value       = aws_ecs_service.fastapi_demo_service.name
 }
 
 output "ecs_task_definition_arn" {
   description = "ECS task definition ARN"
-  value       = aws_ecs_task_definition.fastapi_task_definition.arn
+  value       = aws_ecs_task_definition.fastapi_demo_task.arn
 }
 
 output "ecr_image_uri" {
-  description = "Full ECR image URI constructed from service_tags and service_repositories for the service"
+  description = "Constructed ECR image URI for the fastapi-demo-service from var.service_tags"
   value       = local.service_images["fastapi-demo-service"]
 }
 
+output "vpc_id" {
+  description = "VPC ID"
+  value       = aws_vpc.fastapi_demo_vpc.id
+}
+
+output "public_subnet_ids" {
+  description = "List of public subnet IDs"
+  value       = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id]
+}
+
+output "security_group_ids" {
+  description = "Security group IDs for ALB and ECS tasks"
+  value       = [aws_security_group.alb_sg.id, aws_security_group.ecs_service_sg.id]
+}
+
+output "target_group_arn" {
+  description = "ARN of the ALB target group"
+  value       = aws_lb_target_group.fastapi_demo_tg.arn
+}
+
+output "cloudwatch_log_group" {
+  description = "CloudWatch log group name for ECS tasks"
+  value       = aws_cloudwatch_log_group.ecs_task_log_group.name
+}
+
 output "deployment_contract" {
-  description = "Machine-readable deployment contract for the Deployment Agent"
+  description = "Machine readable deployment contract for the deployment agent"
   value = {
     meta = {
       contract_version = "1.0"
       cloud            = "aws"
-      runtime          = "ecs"
+      runtime          = "ecs_fargate"
       application_type = "backend"
       environment      = var.environment
       region           = var.region
-      deployment_type  = "fargate"
+      deployment_type  = "managed"
     }
 
     compute = {
-      cluster_name  = aws_ecs_cluster.ecs_cluster.name
-      service_name  = aws_ecs_service.fastapi_ecs_service.name
-      service_names = { "fastapi-demo-service" = aws_ecs_service.fastapi_ecs_service.name }
-      task_family   = aws_ecs_task_definition.fastapi_task_definition.family
+      cluster_name  = aws_ecs_cluster.fastapi_demo_cluster.name
+      service_name  = aws_ecs_service.fastapi_demo_service.name
+      service_names = { "fastapi-demo-service" = aws_ecs_service.fastapi_demo_service.name }
+      task_family   = aws_ecs_task_definition.fastapi_demo_task.family
       workload_name = null
     }
 
     network = {
       vpc_id             = aws_vpc.fastapi_demo_vpc.id
       subnet_ids         = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id]
-      security_group_ids = [aws_security_group.ecs_service_sg.id, aws_security_group.alb_sg.id]
-      ingress_id         = aws_internet_gateway.internet_gateway.id
+      security_group_ids = [aws_security_group.alb_sg.id, aws_security_group.ecs_service_sg.id]
+      ingress_id         = aws_lb.app_alb.arn
     }
 
     routing = {
-      public_endpoint      = aws_lb.application_load_balancer.dns_name
-      internal_endpoint    = null
-      custom_domain        = null
-      certificate_required = false
-      certificate_mode     = null
+      public_endpoint       = aws_lb.app_alb.dns_name
+      internal_endpoint     = null
+      custom_domain         = null
+      certificate_required  = false
+      certificate_mode      = null
     }
 
     data = {
-      database_endpoint = null
-      cache_endpoint    = null
-      object_store_name = null
+      database_endpoint   = null
+      cache_endpoint      = null
+      object_store_name   = null
     }
 
     security = {
@@ -73,9 +103,9 @@ output "deployment_contract" {
 
     health = {
       frontend_path  = null
-      backend_path   = "/health"
-      readiness_path = null
-      liveness_path  = null
+      backend_path   = var.health_check_path
+      readiness_path = var.health_check_path
+      liveness_path  = var.health_check_path
     }
   }
 }
