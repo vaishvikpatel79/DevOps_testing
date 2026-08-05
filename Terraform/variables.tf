@@ -16,12 +16,6 @@ variable "region" {
   default     = "us-east-1"
 }
 
-variable "managed_by" {
-  description = "ManagedBy tag value"
-  type        = string
-  default     = "terraform"
-}
-
 variable "account_id" {
   description = "AWS account ID used to construct ECR image URIs."
   type        = string
@@ -40,34 +34,10 @@ variable "service_repositories" {
   default     = {}
 }
 
-variable "az1" {
-  description = "Availability zone for public subnet 1"
-  type        = string
-  default     = "us-east-1a"
-}
-
-variable "az2" {
-  description = "Availability zone for public subnet 2"
-  type        = string
-  default     = "us-east-1b"
-}
-
 variable "desired_task_count" {
-  description = "Desired number of ECS tasks for the service"
+  description = "Desired number of tasks for the ECS service"
   type        = number
   default     = 1
-}
-
-variable "container_cpu" {
-  description = "CPU units for the container"
-  type        = number
-  default     = 256
-}
-
-variable "container_memory" {
-  description = "Memory (MB) for the container"
-  type        = number
-  default     = 512
 }
 
 variable "container_port" {
@@ -76,38 +46,20 @@ variable "container_port" {
   default     = 8000
 }
 
-variable "health_check_path" {
-  description = "Health check path for target group"
-  type        = string
-  default     = "/health"
-}
-
-variable "health_check_port" {
-  description = "Health check port for target group"
-  type        = string
-  default     = "traffic-port"
-}
-
-variable "health_check_protocol" {
-  description = "Health check protocol for target group"
-  type        = string
-  default     = "HTTP"
-}
-
-variable "healthy_threshold_count" {
-  description = "Healthy threshold count for target group health checks"
+variable "cpu_units" {
+  description = "CPU units for the task/container"
   type        = number
-  default     = 2
+  default     = 256
 }
 
-variable "unhealthy_threshold_count" {
-  description = "Unhealthy threshold count for target group health checks"
+variable "memory_mb" {
+  description = "Memory (MB) for the task/container"
   type        = number
-  default     = 3
+  default     = 512
 }
 
-variable "health_check_interval_seconds" {
-  description = "Interval seconds for target group health checks"
-  type        = number
-  default     = 30
+variable "managed_by" {
+  description = "Tag value for ManagedBy tag"
+  type        = string
+  default     = "terraform"
 }
