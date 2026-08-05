@@ -5,7 +5,7 @@ variable "project_name" {
 }
 
 variable "environment" {
-  description = "Deployment environment"
+  description = "Deployment environment (e.g. dev, staging, prod)"
   type        = string
   default     = "dev"
 }
@@ -17,7 +17,7 @@ variable "region" {
 }
 
 variable "account_id" {
-  description = "AWS account ID used to construct ECR image URIs. Provided in requirements."
+  description = "AWS account ID used to construct ECR image URIs."
   type        = string
   default     = "220897588425"
 }
@@ -31,31 +31,17 @@ variable "service_tags" {
 variable "service_repositories" {
   description = "Map of logical service name to container repository name."
   type        = map(string)
-  default     = {
-    "fastapi-demo-service" = "fastapi-demo-service"
-  }
+  default     = { "fastapi-demo-service" = "fastapi-demo-service" }
 }
 
 variable "vpc_cidr" {
-  description = "CIDR block for the VPC."
+  description = "CIDR block for the VPC"
   type        = string
   default     = "10.0.0.0/16"
 }
 
-variable "vpc_dns_resolution_enabled" {
-  description = "Enable DNS resolution in the VPC"
-  type        = bool
-  default     = true
-}
-
-variable "vpc_dns_hostnames_enabled" {
-  description = "Enable DNS hostnames in the VPC"
-  type        = bool
-  default     = true
-}
-
 variable "public_subnet_1_cidr" {
-  description = "CIDR for public subnet 1"
+  description = "CIDR block for public subnet 1"
   type        = string
   default     = "10.0.1.0/24"
 }
@@ -66,14 +52,8 @@ variable "public_subnet_1_az" {
   default     = "us-east-1a"
 }
 
-variable "public_subnet_1_map_public_ip" {
-  description = "Auto-assign public IP for subnet 1"
-  type        = bool
-  default     = true
-}
-
 variable "public_subnet_2_cidr" {
-  description = "CIDR for public subnet 2"
+  description = "CIDR block for public subnet 2"
   type        = string
   default     = "10.0.2.0/24"
 }
@@ -84,56 +64,14 @@ variable "public_subnet_2_az" {
   default     = "us-east-1b"
 }
 
-variable "public_subnet_2_map_public_ip" {
-  description = "Auto-assign public IP for subnet 2"
-  type        = bool
-  default     = true
-}
-
-variable "desired_task_count" {
-  description = "Desired number of ECS tasks for the service"
-  type        = number
-  default     = 1
-}
-
-variable "container_cpu_units" {
-  description = "CPU units for the container"
-  type        = number
-  default     = 256
-}
-
-variable "container_memory_mb" {
-  description = "Memory (MB) for the container"
-  type        = number
-  default     = 512
-}
-
-variable "container_port" {
-  description = "Container port the application listens on"
-  type        = number
-  default     = 8000
-}
-
 variable "health_check_path" {
-  description = "Health check path for load balancer target group"
+  description = "Health check path for target group"
   type        = string
   default     = "/health"
 }
 
-variable "health_check_port" {
-  description = "Health check port for target group (use \"traffic-port\" to use container port)"
-  type        = string
-  default     = "traffic-port"
-}
-
-variable "health_check_protocol" {
-  description = "Health check protocol for target group"
-  type        = string
-  default     = "HTTP"
-}
-
-variable "health_check_interval_seconds" {
-  description = "Interval between health checks"
+variable "health_check_interval" {
+  description = "Health check interval in seconds"
   type        = number
   default     = 30
 }
@@ -148,4 +86,28 @@ variable "unhealthy_threshold_count" {
   description = "Unhealthy threshold count for target group health checks"
   type        = number
   default     = 3
+}
+
+variable "task_cpu" {
+  description = "Task CPU units for Fargate tasks"
+  type        = string
+  default     = "256"
+}
+
+variable "task_memory" {
+  description = "Task memory (MiB) for Fargate tasks"
+  type        = string
+  default     = "512"
+}
+
+variable "desired_count" {
+  description = "Desired count for the ECS service"
+  type        = number
+  default     = 1
+}
+
+variable "managed_by" {
+  description = "Tag value for ManagedBy tag"
+  type        = string
+  default     = "terraform"
 }
