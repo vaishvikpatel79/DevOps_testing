@@ -1,25 +1,19 @@
 variable "project_name" {
-  description = "Project name used for resource naming"
+  description = "Project name prefix used for resource naming"
   type        = string
   default     = "fastapi-demo"
 }
 
 variable "environment" {
-  description = "Deployment environment (e.g. dev, prod)"
+  description = "Deployment environment name"
   type        = string
   default     = "dev"
 }
 
 variable "region" {
-  description = "AWS region to deploy into"
+  description = "AWS region to deploy resources into"
   type        = string
   default     = "us-east-1"
-}
-
-variable "account_id" {
-  description = "AWS account ID used to construct ECR image URIs."
-  type        = string
-  default     = "220897588425"
 }
 
 variable "service_tags" {
@@ -34,14 +28,14 @@ variable "service_repositories" {
   default     = {}
 }
 
-variable "desired_task_count" {
-  description = "Desired number of ECS tasks for the service."
-  type        = number
-  default     = 1
+variable "account_id" {
+  description = "AWS account ID used to construct ECR image URIs."
+  type        = string
+  default     = "220897588425"
 }
 
-variable "managed_by" {
-  description = "ManagedBy tag value for resources"
-  type        = string
-  default     = "terraform"
+variable "desired_task_count" {
+  description = "Number of desired tasks for the ECS service"
+  type        = number
+  default     = 1
 }
