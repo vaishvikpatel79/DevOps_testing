@@ -1,5 +1,5 @@
 variable "project_name" {
-  description = "Project name used in resource naming"
+  description = "Project name used for resource naming"
   type        = string
   default     = "fastapi-demo"
 }
@@ -17,7 +17,7 @@ variable "region" {
 }
 
 variable "account_id" {
-  description = "AWS account ID used to construct ECR image URIs. Taken from requirements."
+  description = "AWS account ID used to construct ECR image URIs. Provided in requirements." 
   type        = string
   default     = "220897588425"
 }
@@ -31,15 +31,57 @@ variable "service_tags" {
 variable "service_repositories" {
   description = "Map of logical service name to container repository name."
   type        = map(string)
-  default     = {
+  default = {
     "fastapi-demo-service" = "fastapi-demo-service"
   }
 }
 
-variable "container_port" {
-  description = "Container port exposed by the application"
+variable "vpc_cidr" {
+  description = "CIDR block for the VPC"
+  type        = string
+  default     = "10.0.0.0/16"
+}
+
+variable "enable_dns_hostnames" {
+  description = "Enable DNS hostnames for the VPC"
+  type        = bool
+  default     = true
+}
+
+variable "enable_dns_support" {
+  description = "Enable DNS resolution support for the VPC"
+  type        = bool
+  default     = true
+}
+
+variable "public_subnet_1_cidr" {
+  description = "CIDR block for public subnet 1"
+  type        = string
+  default     = "10.0.1.0/24"
+}
+
+variable "public_subnet_2_cidr" {
+  description = "CIDR block for public subnet 2"
+  type        = string
+  default     = "10.0.2.0/24"
+}
+
+variable "az1" {
+  description = "Availability zone for subnet 1"
+  type        = string
+  default     = "us-east-1a"
+}
+
+variable "az2" {
+  description = "Availability zone for subnet 2"
+  type        = string
+  default     = "us-east-1b"
+}
+
+variable "desired_task_count" {
+  description = "Desired number of ECS tasks for the service"
   type        = number
-  default     = 8000
+  default     = 1
 }
 
 variable "container_cpu" {
@@ -54,10 +96,10 @@ variable "container_memory" {
   default     = 512
 }
 
-variable "desired_task_count" {
-  description = "Desired number of ECS tasks for the service"
+variable "container_port" {
+  description = "Port the container listens on"
   type        = number
-  default     = 1
+  default     = 8000
 }
 
 variable "health_check_path" {
@@ -66,16 +108,10 @@ variable "health_check_path" {
   default     = "/health"
 }
 
-variable "health_check_port" {
-  description = "Health check port for target group (use 'traffic-port' for backend port)"
-  type        = string
-  default     = "traffic-port"
-}
-
-variable "health_check_protocol" {
-  description = "Health check protocol for the target group"
-  type        = string
-  default     = "HTTP"
+variable "health_check_interval_seconds" {
+  description = "Health check interval in seconds"
+  type        = number
+  default     = 30
 }
 
 variable "healthy_threshold_count" {
@@ -88,10 +124,4 @@ variable "unhealthy_threshold_count" {
   description = "Unhealthy threshold count for target group health check"
   type        = number
   default     = 3
-}
-
-variable "health_check_interval_seconds" {
-  description = "Interval seconds for target group health check"
-  type        = number
-  default     = 30
 }
