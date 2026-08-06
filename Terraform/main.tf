@@ -8,84 +8,92 @@ locals {
   }
 }
 
+##########################
+# Networking resources
+##########################
+
 resource "aws_vpc" "fastapi_demo_vpc" {
-  cidr_block           = var.vpc_cidr
-  enable_dns_support   = true
+  cidr_block = "10.0.0.0/16"
+
   enable_dns_hostnames = true
+  enable_dns_support   = true
 
   tags = {
-    Name       = "${var.project_name}-${var.environment}-vpc"
+    Name      = "${var.project_name}-${var.environment}-vpc"
     Environment = var.environment
     Project     = var.project_name
-    ManagedBy   = "terraform"
+    ManagedBy   = "Terraform"
   }
 }
 
 resource "aws_subnet" "public_subnet_1" {
   vpc_id                  = aws_vpc.fastapi_demo_vpc.id
-  cidr_block              = var.subnet1_cidr
-  availability_zone       = var.subnet1_az
-  map_public_ip_on_launch = var.subnet1_map_public_ip
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = "${var.region}a"
+  map_public_ip_on_launch = true
 
   tags = {
-    Name        = "${var.project_name}-${var.environment}-public-1"
+    Name        = "${var.project_name}-${var.environment}-public-subnet-1"
     Environment = var.environment
     Project     = var.project_name
-    ManagedBy   = "terraform"
+    ManagedBy   = "Terraform"
   }
 }
 
 resource "aws_subnet" "public_subnet_2" {
   vpc_id                  = aws_vpc.fastapi_demo_vpc.id
-  cidr_block              = var.subnet2_cidr
-  availability_zone       = var.subnet2_az
-  map_public_ip_on_launch = var.subnet2_map_public_ip
+  cidr_block              = "10.0.2.0/24"
+  availability_zone       = "${var.region}b"
+  map_public_ip_on_launch = true
 
   tags = {
-    Name        = "${var.project_name}-${var.environment}-public-2"
+    Name        = "${var.project_name}-${var.environment}-public-subnet-2"
     Environment = var.environment
     Project     = var.project_name
-    ManagedBy   = "terraform"
+    ManagedBy   = "Terraform"
   }
 }
 
-resource "aws_internet_gateway" "fastapi_demo_igw" {
+resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.fastapi_demo_vpc.id
 
   tags = {
     Name        = "${var.project_name}-${var.environment}-igw"
     Environment = var.environment
     Project     = var.project_name
-    ManagedBy   = "terraform"
+    ManagedBy   = "Terraform"
   }
 }
 
 resource "aws_route_table" "public_rt" {
   vpc_id = aws_vpc.fastapi_demo_vpc.id
 
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw.id
+  }
+
   tags = {
     Name        = "${var.project_name}-${var.environment}-public-rt"
     Environment = var.environment
     Project     = var.project_name
-    ManagedBy   = "terraform"
+    ManagedBy   = "Terraform"
   }
 }
 
-resource "aws_route" "public_rt_default_route" {
-  route_table_id         = aws_route_table.public_rt.id
-  destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.fastapi_demo_igw.id
-}
-
-resource "aws_route_table_association" "public_subnet_1_assoc" {
+resource "aws_route_table_association" "public_rt_assoc_1" {
   subnet_id      = aws_subnet.public_subnet_1.id
   route_table_id = aws_route_table.public_rt.id
 }
 
-resource "aws_route_table_association" "public_subnet_2_assoc" {
+resource "aws_route_table_association" "public_rt_assoc_2" {
   subnet_id      = aws_subnet.public_subnet_2.id
   route_table_id = aws_route_table.public_rt.id
 }
+
+##########################
+# Security groups
+##########################
 
 resource "aws_security_group" "alb_sg" {
   name   = "${var.project_name}-${var.environment}-alb-sg"
@@ -95,7 +103,7 @@ resource "aws_security_group" "alb_sg" {
     Name        = "${var.project_name}-${var.environment}-alb-sg"
     Environment = var.environment
     Project     = var.project_name
-    ManagedBy   = "terraform"
+    ManagedBy   = "Terraform"
   }
 }
 
@@ -107,38 +115,38 @@ resource "aws_security_group" "ecs_service_sg" {
     Name        = "${var.project_name}-${var.environment}-ecs-sg"
     Environment = var.environment
     Project     = var.project_name
-    ManagedBy   = "terraform"
+    ManagedBy   = "Terraform"
   }
 }
 
-resource "aws_security_group_rule" "alb_inbound_http" {
+resource "aws_security_group_rule" "alb_ingress_http" {
   type              = "ingress"
   from_port         = 80
   to_port           = 80
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = aws_security_group.alb_sg.id
-  description       = "Allow HTTP from anywhere to ALB"
+  description       = "Allow HTTP from anywhere"
 }
 
 resource "aws_security_group_rule" "alb_egress_to_ecs" {
-  type              = "egress"
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  cidr_blocks       = [aws_vpc.fastapi_demo_vpc.cidr_block]
-  security_group_id = aws_security_group.alb_sg.id
-  description       = "Allow ALB to reach resources in VPC (including ECS)"
+  type                 = "egress"
+  from_port            = 0
+  to_port              = 0
+  protocol             = "-1"
+  security_group_id    = aws_security_group.alb_sg.id
+  to_security_group_id = aws_security_group.ecs_service_sg.id
+  description          = "Allow ALB to reach ECS tasks"
 }
 
-resource "aws_security_group_rule" "ecs_inbound_from_alb" {
-  type                        = "ingress"
-  from_port                   = var.container_port
-  to_port                     = var.container_port
-  protocol                    = "tcp"
-  security_group_id           = aws_security_group.ecs_service_sg.id
-  source_security_group_id    = aws_security_group.alb_sg.id
-  description                 = "Allow ALB to reach ECS tasks on container port"
+resource "aws_security_group_rule" "ecs_ingress_from_alb" {
+  type                     = "ingress"
+  from_port                = var.container_port
+  to_port                  = var.container_port
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.ecs_service_sg.id
+  source_security_group_id = aws_security_group.alb_sg.id
+  description              = "Allow ALB to connect to ECS tasks on application port"
 }
 
 resource "aws_security_group_rule" "ecs_egress_all" {
@@ -148,13 +156,17 @@ resource "aws_security_group_rule" "ecs_egress_all" {
   protocol          = "-1"
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = aws_security_group.ecs_service_sg.id
-  description       = "Allow ECS tasks to reach outbound destinations"
+  description       = "Allow ECS tasks to reach the internet"
 }
 
-resource "aws_lb" "application_lb" {
+##########################
+# Load balancer
+##########################
+
+resource "aws_lb" "app_alb" {
   name               = "${var.project_name}-${var.environment}-alb"
-  internal           = false
   load_balancer_type = "application"
+  internal           = false
   subnets            = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id]
   security_groups    = [aws_security_group.alb_sg.id]
 
@@ -162,36 +174,37 @@ resource "aws_lb" "application_lb" {
     Name        = "${var.project_name}-${var.environment}-alb"
     Environment = var.environment
     Project     = var.project_name
-    ManagedBy   = "terraform"
+    ManagedBy   = "Terraform"
   }
 }
 
 resource "aws_lb_target_group" "fastapi_demo_tg" {
   name        = "${var.project_name}-${var.environment}-tg"
-  port        = var.container_port
-  protocol    = "HTTP"
   target_type = "ip"
+  port        = var.container_port
+  protocol    = var.health_check_protocol
   vpc_id      = aws_vpc.fastapi_demo_vpc.id
 
   health_check {
-    path                = "/health"
-    protocol            = "HTTP"
+    path                = var.health_check_path
+    protocol            = var.health_check_protocol
+    port                = var.health_check_port
+    interval            = var.health_check_interval_seconds
+    healthy_threshold   = var.healthy_threshold_count
+    unhealthy_threshold = var.unhealthy_threshold_count
     matcher             = "200-399"
-    interval            = 30
-    healthy_threshold   = 2
-    unhealthy_threshold = 3
   }
 
   tags = {
     Name        = "${var.project_name}-${var.environment}-tg"
     Environment = var.environment
     Project     = var.project_name
-    ManagedBy   = "terraform"
+    ManagedBy   = "Terraform"
   }
 }
 
 resource "aws_lb_listener" "http_listener" {
-  load_balancer_arn = aws_lb.application_lb.arn
+  load_balancer_arn = aws_lb.app_alb.arn
   port              = 80
   protocol          = "HTTP"
 
@@ -200,6 +213,10 @@ resource "aws_lb_listener" "http_listener" {
     target_group_arn = aws_lb_target_group.fastapi_demo_tg.arn
   }
 }
+
+##########################
+# IAM and Logging
+##########################
 
 data "aws_iam_policy_document" "ecs_task_assume_role" {
   statement {
@@ -215,21 +232,36 @@ data "aws_iam_policy_document" "ecs_task_assume_role" {
 }
 
 resource "aws_iam_role" "ecs_task_execution_role" {
-  name               = "${var.project_name}-${var.environment}-ecs-task-exec"
+  name               = "${var.project_name}-${var.environment}-ecs-task-exec-role"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_assume_role.json
 
   tags = {
-    Name        = "${var.project_name}-${var.environment}-ecs-task-exec"
+    Name        = "${var.project_name}-${var.environment}-ecs-task-exec-role"
     Environment = var.environment
     Project     = var.project_name
-    ManagedBy   = "terraform"
+    ManagedBy   = "Terraform"
   }
 }
 
-resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_attach" {
+resource "aws_iam_role_policy_attachment" "execution_role_policy_attachment" {
   role       = aws_iam_role.ecs_task_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
+
+resource "aws_cloudwatch_log_group" "fastapi_demo_log_group" {
+  name = "${var.project_name}-${var.environment}-ecs"
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-ecs-logs"
+    Environment = var.environment
+    Project     = var.project_name
+    ManagedBy   = "Terraform"
+  }
+}
+
+##########################
+# ECS Cluster, Task, Service
+##########################
 
 resource "aws_ecs_cluster" "fastapi_demo_cluster" {
   name = "${var.project_name}-${var.environment}-cluster"
@@ -238,24 +270,24 @@ resource "aws_ecs_cluster" "fastapi_demo_cluster" {
     Name        = "${var.project_name}-${var.environment}-cluster"
     Environment = var.environment
     Project     = var.project_name
-    ManagedBy   = "terraform"
+    ManagedBy   = "Terraform"
   }
 }
 
-resource "aws_ecs_task_definition" "fastapi_demo_task" {
+resource "aws_ecs_task_definition" "fastapi_demo_task_def" {
   family                   = "${var.project_name}-${var.environment}-task"
+  cpu                      = tostring(var.container_cpu)
+  memory                   = tostring(var.container_memory)
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = tostring(var.cpu_units)
-  memory                   = tostring(var.memory_mb)
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
 
   container_definitions = jsonencode([
     {
-      name      = var.service_name
-      image     = local.service_images[var.service_name]
-      cpu       = var.cpu_units
-      memory    = var.memory_mb
+      name  = "fastapi-demo-service"
+      image = local.service_images["fastapi-demo-service"]
+      cpu   = var.container_cpu
+      memory = var.container_memory
       essential = true
       portMappings = [
         {
@@ -264,46 +296,55 @@ resource "aws_ecs_task_definition" "fastapi_demo_task" {
           protocol      = "tcp"
         }
       ]
+      readonlyRootFilesystem = false
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.fastapi_demo_log_group.name
+          "awslogs-region"        = var.region
+          "awslogs-stream-prefix" = "ecs"
+        }
+      }
     }
   ])
 
   tags = {
-    Name        = "${var.project_name}-${var.environment}-task"
+    Name        = "${var.project_name}-${var.environment}-taskdef"
     Environment = var.environment
     Project     = var.project_name
-    ManagedBy   = "terraform"
+    ManagedBy   = "Terraform"
   }
 }
 
 resource "aws_ecs_service" "fastapi_demo_service" {
   name            = "${var.project_name}-${var.environment}-service"
   cluster         = aws_ecs_cluster.fastapi_demo_cluster.id
-  task_definition = aws_ecs_task_definition.fastapi_demo_task.arn
+  task_definition = aws_ecs_task_definition.fastapi_demo_task_def.arn
   desired_count   = var.desired_task_count
   launch_type     = "FARGATE"
-  platform_version = "LATEST"
-
-  network_configuration {
-    subnets         = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id]
-    security_groups = [aws_security_group.ecs_service_sg.id]
-    assign_public_ip = "ENABLED"
-  }
 
   load_balancer {
     target_group_arn = aws_lb_target_group.fastapi_demo_tg.arn
-    container_name   = var.service_name
+    container_name   = "fastapi-demo-service"
     container_port   = var.container_port
+  }
+
+  network_configuration {
+    subnets = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id]
+    security_groups = [aws_security_group.ecs_service_sg.id]
+    assign_public_ip = "ENABLED"
   }
 
   tags = {
     Name        = "${var.project_name}-${var.environment}-service"
     Environment = var.environment
     Project     = var.project_name
-    ManagedBy   = "terraform"
+    ManagedBy   = "Terraform"
   }
 
   depends_on = [
+    aws_lb.app_alb,
     aws_lb_target_group.fastapi_demo_tg,
-    aws_lb.application_lb
+    aws_iam_role_policy_attachment.execution_role_policy_attachment
   ]
 }
