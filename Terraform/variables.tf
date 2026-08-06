@@ -1,19 +1,25 @@
 variable "project_name" {
-  description = "Project name prefix used for resource naming"
+  description = "Project name used in resource naming"
   type        = string
   default     = "fastapi-demo"
 }
 
 variable "environment" {
-  description = "Deployment environment name"
+  description = "Deployment environment (e.g. dev, staging, prod)"
   type        = string
   default     = "dev"
 }
 
 variable "region" {
-  description = "AWS region to deploy resources into"
+  description = "AWS region to deploy into"
   type        = string
   default     = "us-east-1"
+}
+
+variable "account_id" {
+  description = "AWS account ID used to construct ECR image URIs. Provided by user requirements."
+  type        = string
+  default     = "220897588425"
 }
 
 variable "service_tags" {
@@ -26,16 +32,4 @@ variable "service_repositories" {
   description = "Map of logical service name to container repository name."
   type        = map(string)
   default     = {}
-}
-
-variable "account_id" {
-  description = "AWS account ID used to construct ECR image URIs."
-  type        = string
-  default     = "220897588425"
-}
-
-variable "desired_task_count" {
-  description = "Number of desired tasks for the ECS service"
-  type        = number
-  default     = 1
 }
