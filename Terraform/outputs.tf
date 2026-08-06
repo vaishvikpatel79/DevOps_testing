@@ -1,82 +1,66 @@
 output "alb_dns_name" {
   description = "Application Load Balancer DNS name"
-  value       = aws_lb.fastapi_demo_alb.dns_name
+  value       = aws_lb.application_lb.dns_name
 }
 
 output "ecs_cluster_name" {
   description = "ECS cluster name"
-  value       = aws_ecs_cluster.fastapi_demo_cluster.name
+  value       = aws_ecs_cluster.fastapi-demo-cluster.name
 }
 
 output "ecs_service_name" {
   description = "ECS service name"
-  value       = aws_ecs_service.fastapi_demo_service.name
+  value       = aws_ecs_service.fastapi-demo-service.name
 }
 
 output "ecs_task_definition_arn" {
   description = "ECS task definition ARN"
-  value       = aws_ecs_task_definition.fastapi_demo_task_def.arn
+  value       = aws_ecs_task_definition.fastapi-demo-task.arn
 }
 
-output "ecr_image_uri" {
-  description = "Constructed ECR image URI for the service"
+output "ecr_image_uri_fastapi_demo_service" {
+  description = "Constructed ECR image URI for the fastapi-demo-service"
   value       = local.service_images["fastapi-demo-service"]
 }
 
-output "alb_arn" {
-  description = "ALB ARN"
-  value       = aws_lb.fastapi_demo_alb.arn
-}
-
-output "vpc_id" {
-  description = "VPC ID"
-  value       = aws_vpc.fastapi_demo_vpc.id
-}
-
-output "subnet_ids" {
-  description = "Public subnet IDs"
-  value       = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id]
-}
-
-output "security_group_ids" {
-  description = "Security group IDs (ALB and ECS)"
-  value       = [aws_security_group.alb_sg.id, aws_security_group.ecs_service_sg.id]
+output "cloudwatch_log_group_name" {
+  description = "CloudWatch log group for ECS tasks"
+  value       = aws_cloudwatch_log_group.ecs-log-group.name
 }
 
 output "deployment_contract" {
-  description = "Deployment contract for the deployment agent"
   value = {
     meta = {
       contract_version = "1.0"
       cloud            = "aws"
       runtime          = "ecs_fargate"
-      application_type = "backend"
+      application_type = "backend-only"
       environment      = var.environment
       region           = var.region
       deployment_type  = "container"
     }
 
     compute = {
-      cluster_name    = aws_ecs_cluster.fastapi_demo_cluster.name
-      service_name    = aws_ecs_service.fastapi_demo_service.name
-      service_names   = { "fastapi-demo-service" = aws_ecs_service.fastapi_demo_service.name }
-      task_family     = aws_ecs_task_definition.fastapi_demo_task_def.family
-      workload_name   = aws_ecs_service.fastapi_demo_service.name
+      cluster_name  = aws_ecs_cluster.fastapi-demo-cluster.name
+      service_name  = aws_ecs_service.fastapi-demo-service.name
+      service_names = { "fastapi-demo-service" = aws_ecs_service.fastapi-demo-service.name }
+      task_family   = aws_ecs_task_definition.fastapi-demo-task.family
+      workload_name = null
     }
 
     network = {
-      vpc_id              = aws_vpc.fastapi_demo_vpc.id
-      subnet_ids          = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id]
-      security_group_ids  = [aws_security_group.alb_sg.id, aws_security_group.ecs_service_sg.id]
-      ingress_id          = aws_lb.fastapi_demo_alb.id
+      vpc_id             = aws_vpc.fastapi-demo-vpc.id
+      subnet_ids         = [aws_subnet.public-subnet-1.id, aws_subnet.public-subnet-2.id]
+      security_group_ids = [aws_security_group.alb-sg.id, aws_security_group.ecs-service-sg.id]
+      ingress_id         = aws_lb.application_lb.id
     }
 
     routing = {
-      public_endpoint       = aws_lb.fastapi_demo_alb.dns_name
-      internal_endpoint     = null
-      custom_domain         = null
-      certificate_required  = false
-      certificate_mode      = null
+      public_endpoint        = aws_lb.application_lb.dns_name
+      internal_endpoint      = null
+      custom_domain          = null
+      certificate_required   = false
+      certificate_mode       = null
     }
 
     data = {
@@ -88,7 +72,7 @@ output "deployment_contract" {
     security = {
       certificate_ref = null
       secret_refs     = null
-      role_arns       = { "ecs_task_execution_role" = aws_iam_role.ecs_task_execution_role.arn }
+      role_arns       = { "ecs_task_execution_role" = aws_iam_role.ecs-task-execution-role.arn }
     }
 
     health = {
