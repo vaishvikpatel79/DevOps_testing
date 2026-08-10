@@ -19,6 +19,7 @@ variable "region" {
 variable "account_id" {
   description = "AWS account ID used to construct ECR image URIs. Required."
   type        = string
+  default     = "220897588425"
 }
 
 variable "service_tags" {
