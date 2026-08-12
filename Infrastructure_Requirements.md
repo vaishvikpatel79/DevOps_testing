@@ -1,157 +1,158 @@
 # Project Information
 
-| Field | Value |
-|---|---|
-| Project Name | fastapi-demo |
-| Cloud Provider | AWS |
-| Region | us-east-1 |
-| Environment | dev |
-| Deployment Platform | ECS Fargate |
-| Architecture Type | backend |
-| Application Exposure | Public |
-| Resource Naming Prefix | fastapi-demo-dev |
-| AccountID | 220897588425 |
+| Field                  | Value              |
+| ---------------------- | ------------------ |
+| Project Name           | fastapi-demo       |
+| Project ID             | cloudteam-490409   |
+| Cloud Provider         | google             |
+| Region                 | us-east1           |
+| Environment            | dev                |
+| Deployment Platform    | Cloud Run          |
+| Architecture Type      | backend            |
+| Application Exposure   | Public             |
+| Resource Naming Prefix | fastapi-demo-dev   |
+
+# 2. Network Layer Requirement
+
+## 2.1 Virtual Private Cloud (VPC)
+
+| Field                | Value             |
+| -------------------- | ----------------- |
+| VPC Name             | fastapi-demo-vpc  |
+| Network Mode         | Custom            |
+| IP Version           | IPv4              |
+| Cloud Run VPC Access | Direct VPC Egress |
 
 ---
 
-# 1. Network Layer Requirement
+## 2.2 Subnetwork Configuration
 
-## 1.1 Virtual Private Cloud (VPC)
-
-| Field | Value |
-|---|---|
-| VPC Name | fastapi-demo-vpc |
-| CIDR Block | 10.0.0.0/16 |
-| IP Version | IPv4 |
-| DNS Resolution Enabled | Yes |
-| DNS Hostnames Enabled | Yes |
+| Subnetwork Name | Subnet Type | Region   | CIDR Block  |
+| --------------- | ----------- | -------- | ----------- |
+| app-subnet      | Private     | us-east1 | 10.0.0.0/24 |
 
 ---
 
-## 1.2 Subnet Configuration
+## 2.3 Internet Connectivity
 
-| Subnet Name | Subnet Type | Availability Zone | CIDR Block | Auto Assign Public IP |
-|---|---|---|---|---|
-| public-subnet-1 | public | us-east-1a | 10.0.1.0/24 | Yes |
-| public-subnet-2 | public | us-east-1b | 10.0.2.0/24 | Yes |
+| Field                  | Value |
+| ---------------------- | ----- |
+| Public Application     | Yes   |
+| External Load Balancer | Yes   |
+| Direct Public IP       | No    |
+| Cloud NAT Enabled      | No    |
 
----
+# 3. Security Layer Requirement
 
-## 1.3 Internet Connectivity
+## 3.1 IAM Service Account & Permissions
 
-| Field | Value |
-|---|---|
-| Internet Gateway Enabled | Yes |
-| NAT Gateway Enabled | No |
+| Service Account Name | Attached Service  | Permissions Required                          |
+| -------------------- | ----------------- | --------------------------------------------- |
+| fastapi-demo-run-sa  | Cloud Run Service | Application-specific Google Cloud permissions |
+| fastapi-demo-run-sa  | Cloud Run Service | Cloud Logging                                 |
 
----
+# 4. Container Platform Requirement
 
-# 2. Security Layer Requirement
+## 4.1 Cloud Run Configuration
 
-## 2.1 Security Group Configuration
-
-| Security Group Name | Attached Service | Traffic Direction | Protocol | Port | Source / Destination |
-|---|---|---|---|---|---|
-| alb-sg | Application Load Balancer | Inbound | TCP | 80 | 0.0.0.0/0 |
-| alb-sg | Application Load Balancer | Outbound | All | All | ecs-service-sg |
-| ecs-service-sg | ECS Service | Inbound | TCP | 8000 | alb-sg |
-| ecs-service-sg | ECS Service | Outbound | All | All | Anywhere |
-
----
-
-## 2.2 IAM Roles & Permissions
-
-| Role Name | Attached Service | Permissions Required |
-|---|---|---|
-| ecs-task-execution-role | ECS Task Execution | ECR Pull, CloudWatch Logs |
+| Field                 | Value                             |
+| --------------------- | --------------------------------- |
+| Service Name          | fastapi-demo-service              |
+| Region                | us-east1                          |
+| Platform              | Cloud Run                         |
+| CPU Architecture      | x86_64                            |
+| Ingress               | Internal and Cloud Load Balancing |
+| Authentication        | Public                            |
+| Execution Environment | Second Generation                 |
+| Service Account       | fastapi-demo-run-sa               |
 
 ---
 
-# 3. Compute Layer Requirement
+## 4.2 Backend Service Configuration
 
-## 3.1 Compute Platform Configuration
-
-| Field | Value |
-|---|---|
-| Compute Platform | ECS Fargate |
-| Container Registry | Amazon ECR |
-| Launch Type | Fargate |
-| Operating System | Linux |
-| CPU Architecture | x86_64 |
-
----
-
-## 3.2 Backend Service Configuration
-
-| Field | Value |
-|---|---|
-| Service Name | fastapi-demo-service |
-| Deployment Type | ECS Fargate |
-| Desired Task Count | 1 |
-| Service Exposure | Public |
-| Attached Load Balancer | Yes |
+| Field                  | Value                |
+| ---------------------- | -------------------- |
+| Service Name           | fastapi-demo-service |
+| Deployment Type        | Cloud Run            |
+| Minimum Instances      | 1                    |
+| Maximum Instances      | 1                    |
+| Service Exposure       | Public               |
+| Load Balancer Attached | Yes                  |
 
 ---
 
-## 3.3 Container Runtime Configuration
+## 4.3 Container Runtime Configuration
 
-| Container Port | CPU Units | Memory (MB) | Read Only Root Filesystem | Container Restart Policy |
-|---|---|---|---|---|
-| 8000 | 256 | 512 | No | Always |
-
----
-
-## 3.4 Health Check Configuration
-
-| Field | Value |
-|---|---|
-| Health Check Enabled | Yes |
-| Health Check Path | /health |
-| Health Check Port | traffic-port |
-| Health Check Protocol | HTTP |
-| Healthy Threshold Count | 2 |
-| Unhealthy Threshold Count | 3 |
-| Health Check Interval (Seconds) | 30 |
+| Container Port | CPU   | Memory | Read Only Root Filesystem | Container Restart Policy |
+| -------------- | ----- | ------ | ------------------------- | ------------------------ |
+| 8000           | 1 CPU | 512 Mi | No                        | Always                   |
 
 ---
 
-# 4. Load Balancing & Traffic Layer Requirement
+## 4.4 Health Check Configuration
 
-## 4.1 Load Balancer Configuration
+| Field                           | Value          |
+| ------------------------------- | -------------- |
+| Health Check Enabled            | Yes            |
+| Health Check Type               | Liveness Probe |
+| Health Check Path               | /health        |
+| Health Check Port               | 8000           |
+| Health Check Protocol           | HTTP           |
+| Health Check Interval (Seconds) | 30             |
 
-| Field | Value |
-|---|---|
-| Load Balancer Type | Application Load Balancer |
-| Exposure Type | Public |
-| Scheme | Internet Facing |
-| Associated Subnet Type | public |
-| Attached Service | fastapi-demo-service |
+# 5. Load Balancing & Traffic Layer Requirement
 
----
+## 5.1 Load Balancer Configuration
 
-## 4.2 Listener Configuration
-
-| Listener Name | Protocol | Port | Default Action |
-|---|---|---|---|
-| http-listener | HTTP | 80 | Forward to Backend Target Group |
-
----
-
-## 4.3 Target Group Configuration
-
-| Target Group Name | Target Service | Protocol | Target Port | Health Check Path |
-|---|---|---|---|---|
-| fastapi-demo-tg | fastapi-demo-service | HTTP | 8000 | /health |
+| Field              | Value                              |
+| ------------------ | ---------------------------------- |
+| Load Balancer Type | External Application Load Balancer |
+| Exposure Type      | Public                             |
+| Scheme             | External                           |
+| Associated Network | fastapi-demo-vpc                   |
+| Attached Service   | fastapi-demo-service               |
 
 ---
 
-# Outputs Required
+## 5.2 Listener Configuration
+
+| Listener Name | Protocol | Port | Default Action             |
+| ------------- | -------- | ---- | -------------------------- |
+| http-listener | HTTP     | 80   | Forward to Backend Service |
+
+---
+
+## 5.3 Backend Service Configuration
+
+| Backend Service Name | Target Service       | Protocol | Target Port |
+| -------------------- | -------------------- | -------- | ----------- |
+| fastapi-demo-backend | fastapi-demo-service | HTTP     | 8000        |
+
+---
+
+## 5.4 Serverless Network Endpoint Group
+
+| Field             | Value                |
+| ----------------- | -------------------- |
+| NEG Type          | Serverless           |
+| Backend Type      | Cloud Run            |
+| Cloud Run Service | fastapi-demo-service |
+| Region            | us-east1             |
+
+# 6. Logging Requirement
+
+## 6.1 Logging Configuration
+
+| Field            | Value         |
+| ---------------- | ------------- |
+| Logging Enabled  | Yes           |
+| Logging Platform | Cloud Logging |
+| Container Logs   | Enabled       |
+
+# 7. Required Terraform Outputs
 
 The infrastructure should return the following Terraform outputs:
 
-- Application Load Balancer DNS
-- ECS Cluster Name
-- ECS Service Name
-- ECS Task Definition ARN
-- ECR Image URI
-```
+* Application Load Balancer IP
+* Cloud Run Service Name
+* Cloud Run Service URL
