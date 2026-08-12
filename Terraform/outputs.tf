@@ -1,26 +1,46 @@
-output "alb_dns_name" {
-  description = "Application Load Balancer DNS name"
-  value       = aws_lb.fastapi_demo_alb.dns_name
+output "vpc_self_link" {
+  description = "Self link of the VPC network"
+  value       = google_compute_network.fastapi_demo_vpc.self_link
 }
 
-output "ecs_cluster_name" {
-  description = "ECS Cluster name"
-  value       = aws_ecs_cluster.fastapi_demo_cluster.name
+output "subnet_self_link" {
+  description = "Self link of the app subnetwork"
+  value       = google_compute_subnetwork.app_subnet.self_link
 }
 
-output "ecs_service_name" {
-  description = "ECS Service name"
-  value       = aws_ecs_service.fastapi_demo_service.name
+output "vpc_connector_name" {
+  description = "Serverless VPC Access connector name"
+  value       = google_vpc_access_connector.vpc_connector.name
 }
 
-output "ecs_task_definition_arn" {
-  description = "ECS Task Definition ARN"
-  value       = aws_ecs_task_definition.fastapi_demo_task_definition.arn
+output "service_account_email" {
+  description = "Email of the Cloud Run service account"
+  value       = google_service_account.fastapi_demo_run_sa.email
 }
 
-output "ecr_image_uris" {
-  description = "Map of service to constructed ECR image URI from var.service_tags"
-  value       = local.service_images
+output "cloud_run_service_name" {
+  description = "Cloud Run service name"
+  value       = google_cloud_run_service.fastapi_demo_service.name
+}
+
+output "cloud_run_service_url" {
+  description = "Cloud Run service URL"
+  value       = try(google_cloud_run_service.fastapi_demo_service.status[0].url, null)
+}
+
+output "backend_service_self_link" {
+  description = "Self link of the backend service"
+  value       = google_compute_backend_service.fastapi_demo_backend.self_link
+}
+
+output "load_balancer_ip" {
+  description = "Reserved global IP for the application load balancer"
+  value       = google_compute_global_address.fastapi_demo_lb_ip.address
+}
+
+output "forwarding_rule_self_link" {
+  description = "Global forwarding rule self link"
+  value       = google_compute_global_forwarding_rule.fastapi_demo_forwarding_rule.self_link
 }
 
 output "deployment_contract" {
@@ -28,33 +48,33 @@ output "deployment_contract" {
   value = {
     meta = {
       contract_version = "1.0"
-      cloud = "aws"
-      runtime = "ecs_fargate"
-      application_type = "backend"
+      cloud = "google"
+      runtime = "cloud_run"
+      application_type = "Backend-only app"
       environment = var.environment
       region = var.region
-      deployment_type = "container"
+      deployment_type = "serverless"
     }
 
     compute = {
-      cluster_name = aws_ecs_cluster.fastapi_demo_cluster.name
-      service_name = aws_ecs_service.fastapi_demo_service.name
+      cluster_name = null
+      service_name = google_cloud_run_service.fastapi_demo_service.name
       service_names = {
-        "fastapi-demo-service" = aws_ecs_service.fastapi_demo_service.name
+        (var.cloud_run_service_name) = google_cloud_run_service.fastapi_demo_service.name
       }
-      task_family = aws_ecs_task_definition.fastapi_demo_task_definition.family
-      workload_name = aws_ecs_service.fastapi_demo_service.name
+      task_family = null
+      workload_name = null
     }
 
     network = {
-      vpc_id = aws_vpc.fastapi_demo_vpc.id
-      subnet_ids = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id]
-      security_group_ids = [aws_security_group.alb_sg.id, aws_security_group.ecs_service_sg.id]
-      ingress_id = aws_lb.fastapi_demo_alb.id
+      vpc_id = google_compute_network.fastapi_demo_vpc.self_link
+      subnet_ids = [google_compute_subnetwork.app_subnet.self_link]
+      security_group_ids = [google_compute_firewall.fastapi_demo_lb_firewall.name, google_compute_firewall.fastapi_demo_backend_firewall.name]
+      ingress_id = google_compute_global_forwarding_rule.fastapi_demo_forwarding_rule.self_link
     }
 
     routing = {
-      public_endpoint = aws_lb.fastapi_demo_alb.dns_name
+      public_endpoint = try(google_cloud_run_service.fastapi_demo_service.status[0].url, null)
       internal_endpoint = null
       custom_domain = null
       certificate_required = false
@@ -71,15 +91,15 @@ output "deployment_contract" {
       certificate_ref = null
       secret_refs = null
       role_arns = {
-        ecs_task_execution_role = aws_iam_role.ecs_task_execution_role.arn
+        logging = google_project_iam_member.fastapi_demo_run_sa_logging_binding.role
       }
     }
 
     health = {
       frontend_path = null
-      backend_path = "/health"
-      readiness_path = "/health"
-      liveness_path = null
+      backend_path = var.health_path
+      readiness_path = null
+      liveness_path = var.health_path
     }
   }
 }

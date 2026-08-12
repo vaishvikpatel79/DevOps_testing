@@ -1,65 +1,28 @@
+variable "project_id" {
+  description = "GCP project id to deploy into"
+  type        = string
+}
+
 variable "project_name" {
-  description = "Project name used in resource naming and tags."
+  description = "Project name prefix used for resource naming"
   type        = string
   default     = "fastapi-demo"
 }
 
 variable "environment" {
-  description = "Deployment environment (e.g. dev, staging, prod)."
+  description = "Deployment environment"
   type        = string
   default     = "dev"
 }
 
 variable "region" {
-  description = "AWS region to deploy into."
+  description = "GCP region to deploy resources into"
   type        = string
-  default     = "us-east-1"
-}
-
-variable "account_id" {
-  description = "AWS account ID used to construct ECR image URIs."
-  type        = string
-  default     = "220897588425"
-}
-
-variable "vpc_cidr" {
-  description = "CIDR block for the VPC."
-  type        = string
-  default     = "10.0.0.0/16"
-}
-
-variable "public_subnet_1_cidr" {
-  description = "CIDR block for public subnet 1."
-  type        = string
-  default     = "10.0.1.0/24"
-}
-
-variable "public_subnet_2_cidr" {
-  description = "CIDR block for public subnet 2."
-  type        = string
-  default     = "10.0.2.0/24"
-}
-
-variable "public_subnet_1_az" {
-  description = "Availability zone for public subnet 1."
-  type        = string
-  default     = "us-east-1a"
-}
-
-variable "public_subnet_2_az" {
-  description = "Availability zone for public subnet 2."
-  type        = string
-  default     = "us-east-1b"
-}
-
-variable "desired_task_count" {
-  description = "Desired ECS task count for the service."
-  type        = number
-  default     = 1
+  default     = "us-east1"
 }
 
 variable "service_tags" {
-  description = "Map of service name to image tag. Terraform constructs full ECR URIs from this map."
+  description = "Map of service name to image tag. Terraform constructs full Artifact Registry URIs from this map."
   type        = map(string)
   default     = {}
 }
@@ -67,5 +30,65 @@ variable "service_tags" {
 variable "service_repositories" {
   description = "Map of logical service name to container repository name."
   type        = map(string)
-  default     = { "fastapi-demo-service" = "fastapi-demo-service" }
+  default     = {}
+}
+
+variable "artifact_registry_repository" {
+  description = "Artifact Registry repository name. Defaults to the project name (e.g. \"ecommerce-platform\")."
+  type        = string
+  default     = "fastapi-demo"
+}
+
+variable "cloud_run_service_name" {
+  description = "Cloud Run service name"
+  type        = string
+  default     = "fastapi-demo-service"
+}
+
+variable "service_account_name" {
+  description = "Service account account_id for Cloud Run service"
+  type        = string
+  default     = "fastapi-demo-run-sa"
+}
+
+variable "subnet_cidr" {
+  description = "CIDR range for the app subnetwork"
+  type        = string
+  default     = "10.0.0.0/24"
+}
+
+variable "vpc_connector_ip_cidr" {
+  description = "IP CIDR range for the Serverless VPC Access connector"
+  type        = string
+  default     = "10.8.0.0/28"
+}
+
+variable "container_port" {
+  description = "Container port exposed by the service"
+  type        = number
+  default     = 8000
+}
+
+variable "container_cpu" {
+  description = "Requested CPU for the container (as string for Cloud Run requests)"
+  type        = string
+  default     = "1"
+}
+
+variable "container_memory" {
+  description = "Requested memory for the container (as string for Cloud Run requests)"
+  type        = string
+  default     = "512Mi"
+}
+
+variable "health_path" {
+  description = "Liveness probe path for the service"
+  type        = string
+  default     = "/health"
+}
+
+variable "health_check_interval" {
+  description = "Interval seconds for the health check probe"
+  type        = number
+  default     = 30
 }
