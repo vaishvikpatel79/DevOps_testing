@@ -9,257 +9,221 @@ locals {
   }
 }
 
-# Read existing project
-data "google_project" "project" {
-  project_id = var.project_id
-}
-
-# Enable required APIs
-resource "google_project_service" "compute_api" {
+resource "google_project_service" "enable_compute_api" {
   service = "compute.googleapis.com"
-  project = var.project_id
-  depends_on = [data.google_project.project]
 }
 
-resource "google_project_service" "cloud_run_api" {
+resource "google_project_service" "enable_run_api" {
   service = "run.googleapis.com"
-  project = var.project_id
-  depends_on = [data.google_project.project]
 }
 
-resource "google_project_service" "vpcaccess_api" {
+resource "google_project_service" "enable_vpcaccess_api" {
   service = "vpcaccess.googleapis.com"
-  project = var.project_id
-  depends_on = [data.google_project.project]
 }
 
-resource "google_project_service" "logging_api" {
+resource "google_project_service" "enable_logging_api" {
   service = "logging.googleapis.com"
-  project = var.project_id
-  depends_on = [data.google_project.project]
 }
 
-# VPC network
 resource "google_compute_network" "fastapi_demo_vpc" {
   name                    = "${var.project_name}-${var.environment}-vpc"
   auto_create_subnetworks = false
+  routing_mode            = "GLOBAL"
 
   params {
     resource_manager_tags = {
       environment = var.environment
       project     = var.project_name
-      managed_by  = var.managed_by
+      managed_by  = "terraform"
     }
   }
-
-  depends_on = [google_project_service.compute_api]
+  depends_on = [google_project_service.enable_compute_api]
 }
 
-# Subnetwork
 resource "google_compute_subnetwork" "app_subnet" {
   name          = "${var.project_name}-${var.environment}-app-subnet"
+  ip_cidr_range = "10.0.0.0/24"
   region        = var.region
-  network       = google_compute_network.fastapi_demo_vpc.self_link
-  ip_cidr_range = var.subnet_cidr
+  network       = google_compute_network.fastapi_demo_vpc.id
 
   params {
     resource_manager_tags = {
       environment = var.environment
       project     = var.project_name
-      managed_by  = var.managed_by
+      managed_by  = "terraform"
     }
   }
-
   depends_on = [google_compute_network.fastapi_demo_vpc]
 }
 
-# VPC Access Connector for Cloud Run
 resource "google_vpc_access_connector" "fastapi_demo_connector" {
-  name   = "${var.project_name}-${var.environment}-connector"
-  region = var.region
+  name = "${var.project_name}-${var.environment}-connector"
 
   subnet {
     name = google_compute_subnetwork.app_subnet.name
   }
 
-  depends_on = [google_compute_subnetwork.app_subnet, google_project_service.vpcaccess_api]
+  depends_on = [google_project_service.enable_vpcaccess_api, google_compute_subnetwork.app_subnet]
 }
 
-# Service account for Cloud Run
 resource "google_service_account" "fastapi_demo_run_sa" {
   account_id   = var.service_account_id
-  display_name = "Cloud Run service account for ${var.project_name}-${var.environment}"
-  project      = var.project_id
-
-  depends_on = [data.google_project.project]
+  display_name = "${var.project_name}-${var.environment}-run-sa"
+  depends_on   = [google_project_service.enable_run_api]
 }
 
-# Grant Logging Writer role to the service account
-resource "google_project_iam_member" "fastapi_logging_binding" {
-  project = var.project_id
-  role    = "roles/logging.logWriter"
-  member  = "serviceAccount:${google_service_account.fastapi_demo_run_sa.email}"
-
-  depends_on = [google_service_account.fastapi_demo_run_sa, google_project_service.logging_api]
+resource "google_project_iam_member" "sa_logging_writer" {
+  member     = "serviceAccount:${google_service_account.fastapi_demo_run_sa.email}"
+  role       = "roles/logging.logWriter"
+  project    = var.project_id
+  depends_on = [google_service_account.fastapi_demo_run_sa, google_project_service.enable_logging_api]
 }
 
-# Cloud Run service
 resource "google_cloud_run_service" "fastapi_demo_service" {
-  name     = "${var.project_name}-${var.environment}-service"
+  name     = "${var.project_name}-${var.environment}-crsvc"
   location = var.region
 
   metadata {
     annotations = {
       "run.googleapis.com/vpc-access-connector" = google_vpc_access_connector.fastapi_demo_connector.name
-      "run.googleapis.com/vpc-access-egress"    = "all"
-      "run.googleapis.com/ingress"              = "internal-and-cloud-load-balancing"
-      "autoscaling.knative.dev/minScale"        = tostring(var.min_instances)
-      "autoscaling.knative.dev/maxScale"        = tostring(var.max_instances)
+      "run.googleapis.com/launch-stage"         = "GA"
     }
-
     labels = {
       environment = var.environment
       project     = var.project_name
-      managed_by  = var.managed_by
+      managed_by  = "terraform"
     }
   }
 
   template {
+    metadata {
+      labels = {
+        environment = var.environment
+        project     = var.project_name
+        managed_by  = "terraform"
+      }
+    }
+
     spec {
+      service_account_name = google_service_account.fastapi_demo_run_sa.email
+
       containers {
         image = local.service_images["fastapi-demo-service"]
 
         ports {
-          container_port = var.container_port
+          container_port = 8000
         }
 
         resources {
           requests = {
-            cpu    = var.container_cpu
-            memory = var.container_memory
+            cpu    = "1"
+            memory = "512Mi"
           }
         }
 
         liveness_probe {
+          period_seconds = 30
           http_get {
-            path = var.health_check_path
+            path = "/health"
           }
-          period_seconds       = var.health_check_interval_seconds
-          timeout_seconds      = 10
-          initial_delay_seconds = 0
         }
       }
     }
   }
 
-  depends_on = [google_service_account.fastapi_demo_run_sa, google_vpc_access_connector.fastapi_demo_connector, google_project_service.cloud_run_api]
+  traffic {
+    percent         = 100
+    latest_revision = true
+  }
+
+  depends_on = [google_project_service.enable_run_api, google_vpc_access_connector.fastapi_demo_connector, google_service_account.fastapi_demo_run_sa, google_project_iam_member.sa_logging_writer]
 }
 
-# Allow public (unauthenticated) access to Cloud Run service
-resource "google_cloud_run_service_iam_member" "fastapi_demo_invoker_allusers" {
-  service = google_cloud_run_service.fastapi_demo_service.name
-  role    = "roles/run.invoker"
-  member  = "allUsers"
-
+resource "google_cloud_run_service_iam_member" "fastapi_demo_service_public_invoker" {
+  service    = google_cloud_run_service.fastapi_demo_service.name
+  role       = "roles/run.invoker"
+  member     = "allUsers"
+  project    = var.project_id
   depends_on = [google_cloud_run_service.fastapi_demo_service]
 }
 
-# Serverless NEG pointing at Cloud Run
-resource "google_compute_region_network_endpoint_group" "fastapi_serverless_neg" {
-  name   = "${var.project_name}-${var.environment}-neg"
-  region = var.region
+resource "google_compute_region_network_endpoint_group" "fastapi_demo_serverless_neg" {
+  name    = "${var.project_name}-${var.environment}-neg"
+  region  = var.region
+  network = google_compute_network.fastapi_demo_vpc.id
 
   cloud_run {
     service = google_cloud_run_service.fastapi_demo_service.name
   }
 
-  depends_on = [google_cloud_run_service.fastapi_demo_service, google_project_service.compute_api]
+  depends_on = [google_cloud_run_service.fastapi_demo_service, google_project_service.enable_compute_api]
 }
 
-# HTTP health check for the load balancer
-resource "google_compute_health_check" "fastapi_health_check" {
-  name = "${var.project_name}-${var.environment}-hc"
-
-  check_interval_sec   = var.health_check_interval_seconds
-  timeout_sec          = 10
-  healthy_threshold    = 1
-  unhealthy_threshold  = 3
+resource "google_compute_health_check" "fastapi_demo_health_check" {
+  name               = "${var.project_name}-${var.environment}-hc"
+  check_interval_sec = 30
 
   http_health_check {
-    request_path = var.health_check_path
-    port         = var.health_check_port
+    port         = 8000
+    request_path = "/health"
   }
 
-  depends_on = [google_project_service.compute_api]
+  depends_on = [google_project_service.enable_compute_api]
 }
 
-# Global backend service forwarding to the serverless NEG
 resource "google_compute_backend_service" "fastapi_demo_backend" {
-  name                 = "${var.project_name}-${var.environment}-backend"
-  protocol             = "HTTP"
-  load_balancing_scheme = "EXTERNAL"
-
-  health_checks = [google_compute_health_check.fastapi_health_check.self_link]
+  name                  = "${var.project_name}-${var.environment}-backend"
+  protocol              = "HTTP"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+  health_checks         = [google_compute_health_check.fastapi_demo_health_check.id]
 
   backend {
-    group = google_compute_region_network_endpoint_group.fastapi_serverless_neg.id
+    group = google_compute_region_network_endpoint_group.fastapi_demo_serverless_neg.id
   }
 
   params {
     resource_manager_tags = {
       environment = var.environment
       project     = var.project_name
-      managed_by  = var.managed_by
+      managed_by  = "terraform"
     }
   }
 
-  depends_on = [google_compute_region_network_endpoint_group.fastapi_serverless_neg, google_compute_health_check.fastapi_health_check, google_project_service.compute_api]
+  depends_on = [google_compute_region_network_endpoint_group.fastapi_demo_serverless_neg, google_compute_health_check.fastapi_demo_health_check, google_project_service.enable_compute_api]
 }
 
-# URL map routing to backend service
-resource "google_compute_url_map" "fastapi_url_map" {
-  name           = "${var.project_name}-${var.environment}-url-map"
-  default_service = google_compute_backend_service.fastapi_demo_backend.self_link
+resource "google_compute_url_map" "fastapi_demo_url_map" {
+  name            = "${var.project_name}-${var.environment}-urlmap"
+  default_service = google_compute_backend_service.fastapi_demo_backend.id
 
   depends_on = [google_compute_backend_service.fastapi_demo_backend]
 }
 
-# Target HTTP proxy for URL map
-resource "google_compute_target_http_proxy" "fastapi_http_proxy" {
+resource "google_compute_target_http_proxy" "fastapi_demo_http_proxy" {
   name    = "${var.project_name}-${var.environment}-http-proxy"
-  url_map = google_compute_url_map.fastapi_url_map.self_link
+  url_map = google_compute_url_map.fastapi_demo_url_map.id
 
-  depends_on = [google_compute_url_map.fastapi_url_map]
+  depends_on = [google_compute_url_map.fastapi_demo_url_map]
 }
 
-# Global external IP for the load balancer
-resource "google_compute_global_address" "fastapi_lb_ip" {
-  name         = "${var.project_name}-${var.environment}-lb-ip"
-  address_type = "EXTERNAL"
-  ip_version   = "IPV4"
+resource "google_compute_global_address" "fastapi_demo_lb_ip" {
+  name = "${var.project_name}-${var.environment}-lb-ip"
 
   labels = {
     environment = var.environment
     project     = var.project_name
-    managed_by  = var.managed_by
+    managed_by  = "terraform"
   }
 
-  depends_on = [google_project_service.compute_api]
+  depends_on = [google_project_service.enable_compute_api]
 }
 
-# Global forwarding rule listening on port 80 -> target HTTP proxy
-resource "google_compute_global_forwarding_rule" "fastapi_http_forwarding_rule" {
-  name                 = "${var.project_name}-${var.environment}-http-forward"
-  target               = google_compute_target_http_proxy.fastapi_http_proxy.self_link
-  ip_address           = google_compute_global_address.fastapi_lb_ip.address
-  port_range           = "80-80"
-  load_balancing_scheme = "EXTERNAL"
+resource "google_compute_global_forwarding_rule" "fastapi_demo_forwarding_rule" {
+  name                  = "${var.project_name}-${var.environment}-fw-rule"
+  target                = google_compute_target_http_proxy.fastapi_demo_http_proxy.id
+  port_range            = "80"
+  ip_address            = google_compute_global_address.fastapi_demo_lb_ip.address
+  load_balancing_scheme = "EXTERNAL_MANAGED"
 
-  labels = {
-    environment = var.environment
-    project     = var.project_name
-    managed_by  = var.managed_by
-  }
-
-  depends_on = [google_compute_target_http_proxy.fastapi_http_proxy, google_compute_global_address.fastapi_lb_ip]
+  depends_on = [google_compute_target_http_proxy.fastapi_demo_http_proxy, google_compute_global_address.fastapi_demo_lb_ip]
 }
