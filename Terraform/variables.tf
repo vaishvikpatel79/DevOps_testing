@@ -10,15 +10,81 @@ variable "project_name" {
 }
 
 variable "environment" {
-  description = "Deployment environment"
+  description = "Deployment environment (e.g. dev, prod)"
   type        = string
   default     = "dev"
 }
 
 variable "region" {
-  description = "GCP region to deploy resources into"
+  description = "GCP region for regional resources"
   type        = string
   default     = "us-east1"
+}
+
+variable "managed_by" {
+  description = "Label identifying the manager of these resources"
+  type        = string
+  default     = "terraform"
+}
+
+variable "service_account_id" {
+  description = "Service account account_id to create for Cloud Run"
+  type        = string
+  default     = "fastapi-demo-run-sa"
+}
+
+variable "container_cpu" {
+  description = "CPU request for the container (Cloud Run). Use same format as Cloud Run expects, e.g. \"1\""
+  type        = string
+  default     = "1"
+}
+
+variable "container_memory" {
+  description = "Memory request for the container (Cloud Run), e.g. \"512Mi\""
+  type        = string
+  default     = "512Mi"
+}
+
+variable "container_port" {
+  description = "Container listening port"
+  type        = number
+  default     = 8000
+}
+
+variable "min_instances" {
+  description = "Minimum number of Cloud Run instances (autoscaling min)"
+  type        = number
+  default     = 1
+}
+
+variable "max_instances" {
+  description = "Maximum number of Cloud Run instances (autoscaling max)"
+  type        = number
+  default     = 1
+}
+
+variable "health_check_path" {
+  description = "HTTP health check path for backend health checks"
+  type        = string
+  default     = "/health"
+}
+
+variable "health_check_port" {
+  description = "Port used by the health check"
+  type        = number
+  default     = 8000
+}
+
+variable "health_check_interval_seconds" {
+  description = "Interval seconds for health checks"
+  type        = number
+  default     = 30
+}
+
+variable "subnet_cidr" {
+  description = "CIDR range for the app subnetwork"
+  type        = string
+  default     = "10.0.0.0/24"
 }
 
 variable "service_tags" {
@@ -37,58 +103,4 @@ variable "artifact_registry_repository" {
   description = "Artifact Registry repository name. Defaults to the project name (e.g. \"ecommerce-platform\")."
   type        = string
   default     = "fastapi-demo"
-}
-
-variable "cloud_run_service_name" {
-  description = "Cloud Run service name"
-  type        = string
-  default     = "fastapi-demo-service"
-}
-
-variable "service_account_name" {
-  description = "Service account account_id for Cloud Run service"
-  type        = string
-  default     = "fastapi-demo-run-sa"
-}
-
-variable "subnet_cidr" {
-  description = "CIDR range for the app subnetwork"
-  type        = string
-  default     = "10.0.0.0/24"
-}
-
-variable "vpc_connector_ip_cidr" {
-  description = "IP CIDR range for the Serverless VPC Access connector"
-  type        = string
-  default     = "10.8.0.0/28"
-}
-
-variable "container_port" {
-  description = "Container port exposed by the service"
-  type        = number
-  default     = 8000
-}
-
-variable "container_cpu" {
-  description = "Requested CPU for the container (as string for Cloud Run requests)"
-  type        = string
-  default     = "1"
-}
-
-variable "container_memory" {
-  description = "Requested memory for the container (as string for Cloud Run requests)"
-  type        = string
-  default     = "512Mi"
-}
-
-variable "health_path" {
-  description = "Liveness probe path for the service"
-  type        = string
-  default     = "/health"
-}
-
-variable "health_check_interval" {
-  description = "Interval seconds for the health check probe"
-  type        = number
-  default     = 30
 }
