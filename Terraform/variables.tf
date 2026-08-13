@@ -42,5 +42,5 @@ variable "service_repositories" {
 variable "artifact_registry_repository" {
   description = "Artifact Registry repository name. Defaults to the project name (e.g. \"ecommerce-platform\")."
   type        = string
-  default     = "fastapi-demo"
+  default     = "fastapi-demo-dev"
 }
