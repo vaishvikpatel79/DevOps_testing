@@ -30,13 +30,6 @@ resource "google_compute_network" "fastapi_demo_vpc" {
   auto_create_subnetworks = false
   routing_mode            = "GLOBAL"
 
-  params {
-    resource_manager_tags = {
-      environment = var.environment
-      project     = var.project_name
-      managed_by  = "terraform"
-    }
-  }
   depends_on = [google_project_service.enable_compute_api]
 }
 
@@ -46,13 +39,6 @@ resource "google_compute_subnetwork" "app_subnet" {
   region        = var.region
   network       = google_compute_network.fastapi_demo_vpc.id
 
-  params {
-    resource_manager_tags = {
-      environment = var.environment
-      project     = var.project_name
-      managed_by  = "terraform"
-    }
-  }
   depends_on = [google_compute_network.fastapi_demo_vpc]
 }
 
@@ -159,18 +145,6 @@ resource "google_compute_region_network_endpoint_group" "fastapi_demo_serverless
   depends_on = [google_cloud_run_service.fastapi_demo_service, google_project_service.enable_compute_api]
 }
 
-resource "google_compute_health_check" "fastapi_demo_health_check" {
-  name               = "${var.project_name}-${var.environment}-hc"
-  check_interval_sec = 30
-
-  http_health_check {
-    port         = 8000
-    request_path = "/health"
-  }
-
-  depends_on = [google_project_service.enable_compute_api]
-}
-
 resource "google_compute_backend_service" "fastapi_demo_backend" {
   name                  = "${var.project_name}-${var.environment}-backend"
   protocol              = "HTTP"
@@ -181,15 +155,7 @@ resource "google_compute_backend_service" "fastapi_demo_backend" {
     group = google_compute_region_network_endpoint_group.fastapi_demo_serverless_neg.id
   }
 
-  params {
-    resource_manager_tags = {
-      environment = var.environment
-      project     = var.project_name
-      managed_by  = "terraform"
-    }
-  }
-
-  depends_on = [google_compute_region_network_endpoint_group.fastapi_demo_serverless_neg, google_compute_health_check.fastapi_demo_health_check, google_project_service.enable_compute_api]
+  depends_on = [google_compute_region_network_endpoint_group.fastapi_demo_serverless_neg, google_project_service.enable_compute_api]
 }
 
 resource "google_compute_url_map" "fastapi_demo_url_map" {
