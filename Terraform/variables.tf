@@ -18,7 +18,7 @@ variable "environment" {
 variable "region" {
   description = "GCP region to deploy regional resources to."
   type        = string
-  default     = "us-east1"
+  default     = "us-central1"
 }
 
 variable "service_account_id" {
