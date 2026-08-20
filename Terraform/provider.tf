@@ -1,9 +1,6 @@
 terraform {
   required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "~> 7.33.0"
-    }
+    google = { source = "hashicorp/google", version = "~> 7.33.0" }
   }
   backend "gcs" {
   }

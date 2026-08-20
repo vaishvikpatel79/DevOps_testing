@@ -1,24 +1,30 @@
 variable "project_id" {
-  description = "The GCP project id to deploy into."
+  description = "GCP project ID to deploy resources into. This must be provided by the user."
   type        = string
-}
-
-variable "region" {
-  description = "GCP region for regional resources."
-  type        = string
-  default     = "us-east1"
 }
 
 variable "project_name" {
-  description = "Project name prefix used in resource names."
+  description = "Logical project name used for resource naming."
   type        = string
   default     = "fastapi-demo"
 }
 
 variable "environment" {
-  description = "Deployment environment (used in resource names and labels)."
+  description = "Deployment environment (e.g. dev, prod)."
   type        = string
   default     = "dev"
+}
+
+variable "region" {
+  description = "GCP region to deploy regional resources into."
+  type        = string
+  default     = "us-east1"
+}
+
+variable "managed_by" {
+  description = "Label value indicating the managing system."
+  type        = string
+  default     = "terraform"
 }
 
 variable "service_tags" {
@@ -30,7 +36,7 @@ variable "service_tags" {
 variable "service_repositories" {
   description = "Map of logical service name to container repository name."
   type        = map(string)
-  default     = {}
+  default     = { "fastapi-demo-service" = "fastapi-demo-service" }
 }
 
 variable "artifact_registry_repository" {
@@ -40,25 +46,13 @@ variable "artifact_registry_repository" {
 }
 
 variable "service_account_name" {
-  description = "Service account account_id to create for Cloud Run (exact account id)."
+  description = "Service account account_id to create for Cloud Run."
   type        = string
   default     = "fastapi-demo-run-sa"
 }
 
-variable "container_cpu" {
-  description = "Container CPU request for Cloud Run (exact value per requirements)."
+variable "subnet_cidr" {
+  description = "CIDR range for the app subnetwork."
   type        = string
-  default     = "1 CPU"
-}
-
-variable "container_memory" {
-  description = "Container memory request for Cloud Run (exact value per requirements)."
-  type        = string
-  default     = "512 Mi"
-}
-
-variable "container_port" {
-  description = "Container port the application listens on."
-  type        = number
-  default     = 8000
+  default     = "10.0.0.0/24"
 }

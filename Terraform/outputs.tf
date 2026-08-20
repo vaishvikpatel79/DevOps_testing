@@ -9,28 +9,28 @@ output "cloud_run_service_url" {
 }
 
 output "load_balancer_ip" {
-  description = "Reserved global external IP for the application load balancer"
+  description = "Global IP address allocated for the external application load balancer"
   value       = google_compute_global_address.fastapi-demo-lb-ip.address
 }
 
-output "backend_service_name" {
-  description = "Backend service name used by the URL map"
-  value       = google_compute_backend_service.fastapi-demo-backend.name
+output "vpc_self_link" {
+  description = "VPC self_link"
+  value       = google_compute_network.fastapi-demo-vpc.self_link
 }
 
-output "neg_name" {
-  description = "Serverless NEG name"
-  value       = google_compute_region_network_endpoint_group.fastapi-demo-serverless-neg.name
-}
-
-output "health_check_name" {
-  description = "Health check name"
-  value       = google_compute_health_check.fastapi-demo-health-check.name
+output "subnet_self_link" {
+  description = "Subnetwork self_link"
+  value       = google_compute_subnetwork.app-subnet.self_link
 }
 
 output "service_account_email" {
-  description = "Service account email created for Cloud Run"
+  description = "Email of the Cloud Run service account"
   value       = google_service_account.fastapi-demo-run-sa.email
+}
+
+output "service_images" {
+  description = "Map of service -> full image URI constructed from service_tags"
+  value       = local.service_images
 }
 
 output "deployment_contract" {
@@ -38,7 +38,7 @@ output "deployment_contract" {
   value = {
     meta = {
       contract_version = "1.0"
-      cloud = "google"
+      cloud = "gcp"
       runtime = "cloud_run"
       application_type = "backend"
       environment = var.environment
@@ -50,10 +50,10 @@ output "deployment_contract" {
       cluster_name = null
       service_name = google_cloud_run_service.fastapi-demo-service.name
       service_names = {
-        "fastapi-demo-service" = google_cloud_run_service.fastapi-demo-service.name
+        "fastapi-demo-service" = local.service_images["fastapi-demo-service"]
       }
       task_family = null
-      workload_name = null
+      workload_name = google_cloud_run_service.fastapi-demo-service.name
     }
 
     network = {
@@ -81,7 +81,7 @@ output "deployment_contract" {
       certificate_ref = null
       secret_refs = null
       role_arns = {
-        logging_writer = google_project_iam_member.sa_logging_writer.role
+        run_service_account = google_service_account.fastapi-demo-run-sa.email
       }
     }
 
