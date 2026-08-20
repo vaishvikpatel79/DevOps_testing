@@ -1,30 +1,24 @@
 variable "project_id" {
-  description = "The GCP project id to deploy resources into. Required."
+  description = "GCP project id where resources will be created"
   type        = string
 }
 
 variable "project_name" {
-  description = "Logical project name used as a naming prefix."
+  description = "Logical project name used for resource naming"
   type        = string
   default     = "fastapi-demo"
 }
 
 variable "environment" {
-  description = "Deployment environment (used in names and labels)."
+  description = "Deployment environment (e.g. dev, staging, prod)"
   type        = string
   default     = "dev"
 }
 
 variable "region" {
-  description = "GCP region to deploy regional resources to."
+  description = "GCP region for regional resources"
   type        = string
-  default     = "us-central1"
-}
-
-variable "service_account_id" {
-  description = "Service account account_id (local part) used by Cloud Run."
-  type        = string
-  default     = "fastapi-demo-run-sa"
+  default     = "us-east1"
 }
 
 variable "service_tags" {
@@ -42,5 +36,5 @@ variable "service_repositories" {
 variable "artifact_registry_repository" {
   description = "Artifact Registry repository name. Defaults to the project name (e.g. \"ecommerce-platform\")."
   type        = string
-  default     = "fastapi-demo-dev"
+  default     = "fastapi-demo"
 }
